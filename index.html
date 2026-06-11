@@ -267,6 +267,7 @@ tbody tr:hover{background:#fafaf9}
       <option value="tem_iva_mensal">IVA Mensal</option>
       <option value="tem_salarios">Salários</option>
       <option value="tem_retencoes">Retenções</option>
+      <option value="tem_modelo30">Modelo 30</option>
       <option value="tem_independente">Independentes</option>
     </select>
     <button class="btn btn-primary" id="btn-novo-cliente" onclick="openModal()" style="display:none">+ Novo cliente</button>
@@ -609,7 +610,7 @@ const SERVICOS = [
   {key:'tem_cope',label:'COPE'},{key:'tem_iva_trimestral',label:'IVA Trimestral'},
   {key:'tem_iva_mensal',label:'IVA Mensal'},{key:'tem_saft',label:'SAFT'},
   {key:'tem_salarios',label:'Salários/DMR'},{key:'tem_retencoes',label:'Retenções'},
-  {key:'tem_fecho',label:'Fecho Anual'},{key:'tem_independente',label:'Independentes'},
+  {key:'tem_fecho',label:'Fecho Anual'},{key:'tem_modelo30',label:'Modelo 30'},{key:'tem_independente',label:'Independentes'},
 ];
 const MESES_FULL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -725,17 +726,35 @@ const FALLBACK_USERS = [
 
 async function initLogin() {
   const sel = document.getElementById('sel-responsavel');
+  sel.innerHTML = '<option value="">— Seleccionar —</option>';
+
+  // Carregar fallback IMEDIATAMENTE para o dropdown ficar visível
+  allResponsaveis = FALLBACK_USERS;
+  FALLBACK_USERS.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = r.nome;
+    sel.appendChild(opt);
+  });
+
+  // Tentar actualizar com dados reais do Supabase em background
   try {
     const {data, error} = await sb.from('responsaveis').select('*').eq('estado','Ativo').order('nome');
-    if (error || !data || data.length === 0) throw new Error('sem dados');
-    allResponsaveis = data;
+    if (!error && data && data.length > 0) {
+      allResponsaveis = data;
+      // Actualizar dropdown com dados reais
+      sel.innerHTML = '<option value="">— Seleccionar —</option>';
+      data.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.nome;
+        sel.appendChild(opt);
+      });
+      console.log('Supabase OK:', data.length, 'responsáveis');
+    }
   } catch(e) {
-    console.warn('Supabase indisponível, a usar lista local:', e.message);
-    allResponsaveis = FALLBACK_USERS;
+    console.warn('Supabase indisponível, a usar lista local');
   }
-  allResponsaveis.forEach(r => {
-    sel.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
-  });
 }
 
 function goToPin() {
@@ -980,12 +999,16 @@ async function saveCliente(){
   const payload={codigo,nome,
     responsavel:document.getElementById('f-responsavel').value||null,
     estado:document.getElementById('f-estado').value,
-    obs:document.getElementById('f-obs').value.trim()||null};
+    obs:document.getElementById('f-obs').value.trim()||null,
+    tem_iuc:false  // campo removido da UI, forçar false
+  };
   SERVICOS.forEach(s=>{payload[s.key]=document.getElementById('si-'+s.key).classList.contains('active');});
+  
+  console.log('Saving cliente payload:', payload);
   let error;
   if(editingId){({error}=await sb.from('clientes').update(payload).eq('id',editingId));}
   else{({error}=await sb.from('clientes').insert(payload));}
-  if(error){toast('Erro: '+error.message,'error');return;}
+  if(error){toast('Erro ao guardar: '+error.message,'error');console.error('Save error:',error);return;}
   toast(editingId?'Cliente actualizado':'Cliente criado');
   closeModal(); await loadClientes();
 }
@@ -1118,15 +1141,15 @@ async function loadIvaTri(){
       ${mesCols}
       ${ec(c.id,'docs_em_falta',r.docs_em_falta,docsBg||rowBg,';border-left:2px solid rgba(0,0,0,.06)')}
       ${editable
-        ?`<td style="background:${rowBg};text-align:center;cursor:pointer;border-left:none" onclick="editRespExecucao(this,'${r.resp_execucao||''}',async(v)=>{const ex=await sb.from('iva_trimestral').select('id').eq('cliente_id','${c.id}').eq('ano',2026).eq('trimestre',${trimestre}).single();let err;if(ex.data){({error:err}=await sb.from('iva_trimestral').update({resp_execucao:v||null,updated_by:currentUser.nome}).eq('id',ex.data.id));}else{({error:err}=await sb.from('iva_trimestral').insert({cliente_id:'${c.id}',ano:2026,trimestre:${trimestre},resp_execucao:v||null,updated_by:currentUser.nome}));}if(!err){this.textContent=v;toast('Guardado');}else toast('Erro: '+err.message,'error');})">${r.resp_execucao||''}</td>`
+        ?`<td style="background:${rowBg};text-align:center;cursor:pointer;border-left:none" onclick="editRespExecucao(this,'${r.resp_execucao||''}','${c.id}',${trimestre},null)">${r.resp_execucao||''}</td>`
         :`<td style="background:${rowBg};text-align:center">${r.resp_execucao||''}</td>`}
       ${editable
         ?`<td style="background:${rowBg};text-align:right;font-weight:${saldo!=null?'600':'400'};padding:7px 10px;cursor:pointer" onclick="editIvaTri('${c.id}',${trimestre},'saldo_iva','${saldo||''}',this)">${saldoFmt}</td>`
         :`<td style="background:${rowBg};text-align:right;padding:7px 10px">${saldoFmt}</td>`}
-      <td style="background:${r.pedir_plano==='sim'?'#fef3c7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'pedir_plano','${c.id}',${trimestre},null,'${r.pedir_plano||''}','#fef3c7','<span style=\"color:#f59e0b;font-weight:700\">📋 Pedir</span>')">
+      <td style="background:${r.pedir_plano==='sim'?'#fef3c7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'pedir_plano','${c.id}',${trimestre},null,'${r.pedir_plano||''}','#fef3c7','ppedir')">
         ${r.pedir_plano==='sim'?'<span style="color:#f59e0b;font-weight:700">📋 Pedir</span>':'<span style="color:#d1d5db;font-size:11px">—</span>'}
       </td>
-      <td style="background:${r.plano_executado==='sim'?'#dcfce7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'plano_executado','${c.id}',${trimestre},null,'${r.plano_executado||''}','#dcfce7','<span style=\"color:#15803d;font-weight:700\">✓ Exec.</span>')">
+      <td style="background:${r.plano_executado==='sim'?'#dcfce7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'plano_executado','${c.id}',${trimestre},null,'${r.plano_executado||''}','#dcfce7','pexec')">
         ${r.plano_executado==='sim'?'<span style="color:#15803d;font-weight:700">✓ Exec.</span>':'<span style="color:#d1d5db;font-size:11px">—</span>'}
       </td>
       <td style="background:${r.saldo_estado==='pronto'?'#dcfce7':r.saldo_estado==='revisao'?'#fef9c3':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="editEstadoSaldo(this,'${c.id}',${trimestre},null,'${r.saldo_estado||''}')">
@@ -1147,7 +1170,7 @@ async function loadIvaTri(){
 }
 
 // ── Dropdown de responsável de execução ────────────────
-function editRespExecucao(td, oldVal, onSave) {
+function editRespExecucao(td, oldVal, clienteId, trimestre, mes) {
   if (td.querySelector('select')) return;
   const orig = td.innerHTML;
   const sel = document.createElement('select');
@@ -1161,8 +1184,21 @@ function editRespExecucao(td, oldVal, onSave) {
   sel.focus();
   const done = async () => {
     const newVal = sel.value;
-    if (newVal !== oldVal) await onSave(newVal);
-    else td.innerHTML = orig;
+    if (newVal === oldVal) { td.innerHTML = orig; return; }
+    // Guardar no Supabase
+    const table = trimestre ? 'iva_trimestral' : 'iva_mensal';
+    const ex = trimestre
+      ? await sb.from(table).select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('trimestre',parseInt(trimestre)).single()
+      : await sb.from(table).select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('mes',parseInt(mes)).single();
+    let error;
+    if (ex.data) {
+      ({error} = await sb.from(table).update({resp_execucao:newVal||null,updated_by:currentUser.nome}).eq('id',ex.data.id));
+    } else {
+      const filter = trimestre?{cliente_id:clienteId,ano:2026,trimestre:parseInt(trimestre)}:{cliente_id:clienteId,ano:2026,mes:parseInt(mes)};
+      ({error} = await sb.from(table).insert({...filter,resp_execucao:newVal||null,updated_by:currentUser.nome}));
+    }
+    if (!error) { td.textContent = newVal; toast('Guardado'); }
+    else { toast('Erro: '+error.message,'error'); td.innerHTML = orig; }
   };
   sel.onblur = done;
   sel.onchange = () => { sel.blur(); };
@@ -1235,9 +1271,13 @@ async function saveRecapit(clienteId, trimestre, val) {
 }
 
 // ── Toggle genérico para campos sim/null ─────────────────
-async function toggleCampo(td, field, clienteId, trimestre, mes, current, bgActive, labelActive) {
-  if (td.querySelector('select')) return;
+const CAMPO_LABELS = {
+  ppedir: {on:'<span style="color:#f59e0b;font-weight:700">📋 Pedir</span>', bg:'#fef3c7'},
+  pexec:  {on:'<span style="color:#15803d;font-weight:700">✓ Exec.</span>',  bg:'#dcfce7'},
+};
+async function toggleCampo(td, field, clienteId, trimestre, mes, current, bgActive, labelCode) {
   const val = current === 'sim' ? null : 'sim';
+  const lbl = CAMPO_LABELS[labelCode] || {on: String(labelCode), bg: bgActive};
   const table = trimestre ? 'iva_trimestral' : 'iva_mensal';
   const ex = trimestre
     ? await sb.from(table).select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('trimestre',trimestre).single()
@@ -1250,8 +1290,8 @@ async function toggleCampo(td, field, clienteId, trimestre, mes, current, bgActi
     ({error} = await sb.from(table).insert({...filter,[field]:val,updated_by:currentUser.nome}));
   }
   if (!error) {
-    td.style.background = val ? bgActive : '';
-    td.innerHTML = val ? labelActive : '<span style="color:#d1d5db;font-size:11px">—</span>';
+    td.style.background = val ? lbl.bg : '';
+    td.innerHTML = val ? lbl.on : '<span style="color:#d1d5db;font-size:11px">—</span>';
     toast(val ? 'Assinalado' : 'Removido');
   } else toast('Erro: '+error.message,'error');
 }
@@ -1439,16 +1479,16 @@ async function loadIvaMen(){
       <td class="sticky-col sticky-col-3" style="background:${rowBg}">${c.responsavel||''}</td>
       ${['entrada','bancos_acc','arquivo','int_vendas','lancamento'].map(f=>editable?`<td onclick="editIvaMen('${cid}',${mes},'${f}','${(r[f]||'').replace(/'/g,"\\'")}',this)">${r[f]||''}</td>`:`<td>${r[f]||''}</td>`).join('')}
       ${editable
-        ?`<td style="cursor:pointer;text-align:center" onclick="editRespExecucao(this,'${r.resp_execucao||''}',async(v)=>{const ex=await sb.from('iva_mensal').select('id').eq('cliente_id','${cid}').eq('ano',2026).eq('mes',${mes}).single();let err;if(ex.data){({error:err}=await sb.from('iva_mensal').update({resp_execucao:v||null,updated_by:currentUser.nome}).eq('id',ex.data.id));}else{({error:err}=await sb.from('iva_mensal').insert({cliente_id:'${cid}',ano:2026,mes:${mes},resp_execucao:v||null,updated_by:currentUser.nome}));}if(!err){this.textContent=v;toast('Guardado');}else toast('Erro: '+err.message,'error');})">${r.resp_execucao||''}</td>`
+        ?`<td style="cursor:pointer;text-align:center" onclick="editRespExecucao(this,'${r.resp_execucao||''}','${cid}',null,${mes})">${r.resp_execucao||''}</td>`
         :`<td style="text-align:center">${r.resp_execucao||''}</td>`}
       ${editable?`<td onclick="editIvaMen('${cid}',${mes},'sim_iva','${(r.sim_iva||'').replace(/'/g,"\\'")}',this)">${r.sim_iva||''}</td>`:`<td>${r.sim_iva||''}</td>`}
       ${editable?`<td style="background:${db}" onclick="editIvaMen('${cid}',${mes},'docs_em_falta','${r.docs_em_falta||''}',this)">${r.docs_em_falta||''}</td>`:`<td style="background:${db}">${r.docs_em_falta||''}</td>`}
       ${editable?`<td style="background:${sb_||rowBg};font-weight:500;cursor:pointer" onclick="editIvaMen('${cid}',${mes},'saldo_iva','${saldo||''}',this)">${sf}</td>`:`<td style="background:${sb_||rowBg};font-weight:500">${sf}</td>`}
-      <td style="background:${r.pedir_plano==='sim'?'#fef3c7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'pedir_plano','${cid}',null,${mes},'${r.pedir_plano||''}','#fef3c7','<span style=\\\"color:#f59e0b;font-weight:700\\\">📋 Pedir</span>')">
-        ${r.pedir_plano==='sim'?'<span style=\"color:#f59e0b;font-weight:700\">📋 Pedir</span>':'<span style=\"color:#d1d5db;font-size:11px\">—</span>'}
+      <td style="background:${r.pedir_plano==='sim'?'#fef3c7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'pedir_plano','${cid}',null,${mes},'${r.pedir_plano||''}','#fef3c7','ppedir')">
+        ${r.pedir_plano==='sim'?'<span style="color:#f59e0b;font-weight:700">📋 Pedir</span>':'<span style="color:#d1d5db;font-size:11px">—</span>'}
       </td>
-      <td style="background:${r.plano_executado==='sim'?'#dcfce7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'plano_executado','${cid}',null,${mes},'${r.plano_executado||''}','#dcfce7','<span style=\\\"color:#15803d;font-weight:700\\\">✓ Exec.</span>')">
-        ${r.plano_executado==='sim'?'<span style=\"color:#15803d;font-weight:700\">✓ Exec.</span>':'<span style=\"color:#d1d5db;font-size:11px\">—</span>'}
+      <td style="background:${r.plano_executado==='sim'?'#dcfce7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'plano_executado','${cid}',null,${mes},'${r.plano_executado||''}','#dcfce7','pexec')">
+        ${r.plano_executado==='sim'?'<span style="color:#15803d;font-weight:700">✓ Exec.</span>':'<span style="color:#d1d5db;font-size:11px">—</span>'}
       </td>
       <td style="background:${r.saldo_estado==='pronto'?'#dcfce7':r.saldo_estado==='revisao'?'#fef9c3':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="editEstadoSaldo(this,'${cid}',null,${mes},'${r.saldo_estado||''}')">
         ${r.saldo_estado==='pronto'?'<span style=\"color:#15803d;font-weight:600\">✓ Pronto</span>':r.saldo_estado==='revisao'?'<span style=\"color:#b45309;font-weight:600\">⚠ Revisão</span>':'<span style=\"color:#9ca3af;font-size:11px\">— definir</span>'}
