@@ -334,7 +334,9 @@ tbody tr:hover{background:#fafaf9}
       <th style="min-width:70px">Sim IVA</th>
       <th style="min-width:100px;background:#fef2f2">Docs em Falta</th>
       <th style="min-width:100px;background:#f0fdf4">Saldo IVA €</th>
+      <th style="min-width:80px;background:#f0fdf4">Estado</th>
       <th style="min-width:80px;background:#f0fdf4">Envio</th>
+      <th style="min-width:80px;background:#f5f3ff">Reembolso</th>
       <th style="min-width:120px">Obs</th>
     </tr></thead>
     <tbody id="tbody-iva-men"><tr><td colspan="14"><div class="loading"><div class="spinner"></div></div></td></tr></tbody>
@@ -550,8 +552,7 @@ const SERVICOS = [
   {key:'tem_cope',label:'COPE'},{key:'tem_iva_trimestral',label:'IVA Trimestral'},
   {key:'tem_iva_mensal',label:'IVA Mensal'},{key:'tem_saft',label:'SAFT'},
   {key:'tem_salarios',label:'Salários/DMR'},{key:'tem_retencoes',label:'Retenções'},
-  {key:'tem_fecho',label:'Fecho Anual'},{key:'tem_iuc',label:'IUC'},
-  {key:'tem_independente',label:'Independentes'},
+  {key:'tem_fecho',label:'Fecho Anual'},{key:'tem_independente',label:'Independentes'},
 ];
 const MESES_FULL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -560,17 +561,17 @@ const PERMS = {
   administrador: {
     canCreateCliente:true, canEditCliente:true, canDeleteCliente:true,
     canSeeAllClientes:true, canEditAnyCell:true,
-    canManageResponsaveis:true, canSeeResumo:true
+    canManageResponsaveis:true, canSeeResumo:true, canSeeRespSection:true
   },
   tecnico: {
     canCreateCliente:true, canEditCliente:true, canDeleteCliente:false,
     canSeeAllClientes:true, canEditAnyCell:true,
-    canManageResponsaveis:false, canSeeResumo:true
+    canManageResponsaveis:false, canSeeResumo:true, canSeeRespSection:true
   },
   operacional: {
     canCreateCliente:false, canEditCliente:false, canDeleteCliente:false,
     canSeeAllClientes:true, canEditAnyCell:true,
-    canManageResponsaveis:false, canSeeResumo:false
+    canManageResponsaveis:false, canSeeResumo:true, canSeeRespSection:false
   }
 };
 
@@ -583,6 +584,56 @@ function toast(msg, type='success') {
   t.textContent = msg;
   document.getElementById('toast').appendChild(t);
   setTimeout(() => t.remove(), 3000);
+}
+
+function editDateCell(td, value, onSave) {
+  if (td.querySelector('input')) return;
+  const orig = td.innerHTML;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;align-items:center;gap:3px;width:100%';
+  const inp = document.createElement('input');
+  inp.type = 'date';
+  inp.style.cssText = 'flex:1;padding:2px 4px;border:1px solid #93c5fd;border-radius:4px;font-size:11px;background:#eff6ff;outline:none;min-width:0';
+  // Converter DD/MM/YYYY para YYYY-MM-DD
+  if (value) {
+    const parts = value.replace(/-/g,'/').split('/');
+    if (parts.length === 3 && parts[2].length === 4)
+      inp.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    else inp.value = value;
+  }
+  // Botão apagar
+  const del = document.createElement('button');
+  del.textContent = '✕';
+  del.title = 'Apagar data';
+  del.style.cssText = 'padding:1px 5px;border:1px solid #fca5a5;border-radius:3px;background:#fee2e2;color:#b91c1c;font-size:11px;cursor:pointer;flex-shrink:0;line-height:1.4';
+  let deleting = false;
+  del.onmousedown = (e) => { e.preventDefault(); deleting = true; };
+  del.onclick = async () => {
+    deleting = true;
+    inp.value = '';
+    await onSave('');
+    td.innerHTML = '';
+    toast('Data apagada');
+  };
+  wrap.appendChild(inp); wrap.appendChild(del);
+  td.innerHTML = ''; td.appendChild(wrap); inp.focus();
+  const done = async () => {
+    if (deleting) return; // botão apagar tratou disto
+    if (inp.value) {
+      const d = new Date(inp.value + 'T00:00:00');
+      const fmt = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+      await onSave(fmt);
+      td.textContent = fmt;
+    } else {
+      await onSave('');
+      td.textContent = '';
+    }
+  };
+  inp.onblur = (e) => { setTimeout(() => { if (!deleting) done(); }, 100); };
+  inp.onkeydown = e => {
+    if (e.key==='Enter') { e.preventDefault(); inp.blur(); }
+    if (e.key==='Escape') { td.innerHTML = orig; }
+  };
 }
 
 function editCell(td, value, onSave) {
@@ -603,10 +654,28 @@ function editCell(td, value, onSave) {
 }
 
 // ── LOGIN ──────────────────────────────────────────────
+const FALLBACK_USERS = [
+  {id:'1',nome:'Marco',   nivel:'administrador',pin:'1234',estado:'Ativo',funcao:'Administrador'},
+  {id:'2',nome:'Joana',   nivel:'tecnico',      pin:'1234',estado:'Ativo',funcao:'Contabilista'},
+  {id:'3',nome:'Liliana', nivel:'tecnico',      pin:'1234',estado:'Ativo',funcao:'Contabilista'},
+  {id:'4',nome:'Filipe',  nivel:'tecnico',      pin:'1234',estado:'Ativo',funcao:'Contabilista'},
+  {id:'5',nome:'Andreia', nivel:'operacional',  pin:'1234',estado:'Ativo',funcao:'Contabilista'},
+  {id:'6',nome:'Catarina',nivel:'operacional',  pin:'1234',estado:'Ativo',funcao:'Contabilista'},
+  {id:'7',nome:'Marta',   nivel:'operacional',  pin:'1234',estado:'Ativo',funcao:'Contabilista'},
+  {id:'8',nome:'Rodrigo', nivel:'operacional',  pin:'1234',estado:'Ativo',funcao:'Contabilista'},
+  {id:'9',nome:'Sara',    nivel:'operacional',  pin:'1234',estado:'Ativo',funcao:'Contabilista'},
+];
+
 async function initLogin() {
-  const {data} = await sb.from('responsaveis').select('*').eq('estado','Ativo').order('nome');
-  allResponsaveis = data || [];
   const sel = document.getElementById('sel-responsavel');
+  try {
+    const {data, error} = await sb.from('responsaveis').select('*').eq('estado','Ativo').order('nome');
+    if (error || !data || data.length === 0) throw new Error('sem dados');
+    allResponsaveis = data;
+  } catch(e) {
+    console.warn('Supabase indisponível, a usar lista local:', e.message);
+    allResponsaveis = FALLBACK_USERS;
+  }
   allResponsaveis.forEach(r => {
     sel.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
   });
@@ -649,32 +718,35 @@ function updatePinDots() {
 
 async function pinConfirm() {
   if (!currentUser) return;
-  const {data, error} = await sb.from('responsaveis').select('pin,nivel,nome').eq('id',currentUser.id).single();
-  
-  console.log('PIN debug:', {
-    userId: currentUser.id,
-    data: data,
-    error: error,
-    pinBuffer: pinBuffer,
-    pinBD: data?.pin,
-    match: data?.pin === pinBuffer
-  });
 
-  if (error) {
-    document.getElementById('pin-error').textContent = 'Erro: ' + error.message;
-    pinBuffer = ''; updatePinDots(); return;
+  let pinBD = '';
+  let nivel = currentUser.nivel || 'operacional';
+
+  // Tentar buscar da BD primeiro
+  try {
+    const {data, error} = await sb.from('responsaveis').select('pin,nivel,nome').eq('id',currentUser.id).single();
+    if (!error && data) {
+      pinBD = (data.pin || '').toString().trim();
+      nivel = data.nivel || nivel;
+    } else {
+      // Fallback: usar dados locais
+      const local = FALLBACK_USERS.find(u => u.id === currentUser.id);
+      if (local) { pinBD = local.pin; nivel = local.nivel; }
+    }
+  } catch(e) {
+    const local = FALLBACK_USERS.find(u => u.id === currentUser.id);
+    if (local) { pinBD = local.pin; nivel = local.nivel; }
   }
-  
-  const pinBD = (data?.pin || '').toString().trim();
+
   const pinInput = pinBuffer.toString().trim();
-  
-  if (!data || pinBD !== pinInput) {
+
+  if (!pinBD || pinBD !== pinInput) {
     pinBuffer = '';
     updatePinDots();
-    document.getElementById('pin-error').textContent = 'PIN incorrecto. BD:' + pinBD + ' Input:' + pinInput;
+    document.getElementById('pin-error').textContent = 'PIN incorrecto. Tenta novamente.';
     return;
   }
-  currentUser = {...currentUser, nivel: data.nivel};
+  currentUser = {...currentUser, nivel};
   document.getElementById('pin-error').textContent = '';
   loginSuccess();
 }
@@ -908,6 +980,7 @@ async function loadIvaTri(){
       const submetido=r.envio&&r.envio!=='-';
       const pronto=!submetido&&r.saldo_estado==='pronto';
       const revisao=!submetido&&r.saldo_estado==='revisao';
+      // A lançar = sem envio, sem estado definido (inclui linhas com saldo mas sem estado)
       const alancar=!submetido&&!pronto&&!revisao;
       if(estadoFilterTri==='submetido'&&!submetido)return false;
       if(estadoFilterTri==='pronto'&&!pronto)return false;
@@ -941,8 +1014,8 @@ async function loadIvaTri(){
     ).join('')
   ).join('');
 
-  const thSubFecho = ['Docs em Falta','Resp. Execução','Saldo IVA','Recapit.','Envio','Obs'].map((sub,i)=>
-    `<th style="min-width:${i===5?140:i===0||i===1?100:90}px;background:${fechoBg}cc;color:#fff;font-size:10px;font-weight:600;text-align:center;border-left:${i===0?'2px solid rgba(255,255,255,.3)':'none'}">${sub}</th>`
+  const thSubFecho = ['Docs em Falta','Resp. Execução','Saldo IVA','Estado','Recapit.','Envio','Reembolso','Obs'].map((sub,i)=>
+    `<th style="min-width:${i===7?140:i===0||i===1?100:i===3||i===6?80:90}px;background:${i===6?'#7e22ce':fechoBg}cc;color:#fff;font-size:10px;font-weight:600;text-align:center;border-left:${i===0?'2px solid rgba(255,255,255,.3)':'none'}">${sub}</th>`
   ).join('');
 
   document.getElementById('thead-iva-tri-wrap').innerHTML =
@@ -964,7 +1037,9 @@ async function loadIvaTri(){
     const saldoBg=saldo!=null?(parseFloat(saldo)<=0?'#dcfce7':'#fef9c3'):'';
     const envioBg=r.envio&&r.envio!=='-'?'#dcfce7':'';
     const docsBg=r.docs_em_falta?'#fee2e2':'';
-    const rowBg=rowIdx%2===0?'#fafaf9':'#fff';
+    // Linha vazia (sem qualquer dado) = vermelho claro (a lançar)
+    const temDados = r.entrada_m1||r.entrada_m2||r.entrada_m3||r.saldo_iva||r.envio;
+    const rowBg = temDados ? (rowIdx%2===0?'#fafaf9':'#fff') : (rowIdx%2===0?'#fff1f2':'#fff5f5');
 
     // Colunas por mês — borda esquerda a separar meses
     const mesCols = ['m1','m2','m3'].map((m,mi)=>
@@ -986,12 +1061,16 @@ async function loadIvaTri(){
         ?`<td style="background:${rowBg};text-align:center;cursor:pointer;border-left:none" onclick="editRespExecucao(this,'${r.resp_execucao||''}',async(v)=>{const ex=await sb.from('iva_trimestral').select('id').eq('cliente_id','${c.id}').eq('ano',2026).eq('trimestre',${trimestre}).single();let err;if(ex.data){({error:err}=await sb.from('iva_trimestral').update({resp_execucao:v||null,updated_by:currentUser.nome}).eq('id',ex.data.id));}else{({error:err}=await sb.from('iva_trimestral').insert({cliente_id:'${c.id}',ano:2026,trimestre:${trimestre},resp_execucao:v||null,updated_by:currentUser.nome}));}if(!err){this.textContent=v;toast('Guardado');}else toast('Erro: '+err.message,'error');})">${r.resp_execucao||''}</td>`
         :`<td style="background:${rowBg};text-align:center">${r.resp_execucao||''}</td>`}
       ${editable
-        ?`<td data-estado="${r.saldo_estado||''}" style="background:${r.saldo_estado==='pronto'?'#dcfce7':r.saldo_estado==='revisao'?'#fef9c3':saldoBg||rowBg};text-align:right;font-weight:${saldo!=null?'600':'400'};padding:7px 10px;cursor:pointer" title="${r.saldo_estado==='pronto'?'Pronto a submeter':r.saldo_estado==='revisao'?'Precisa revisão':'Clique direito: mudar estado | Clique: editar valor'}" onclick="editIvaTri('${c.id}',${trimestre},'saldo_iva','${saldo||''}',this)" ondblclick="cycleSaldo(this,'${c.id}',${trimestre},null,'tri')">${saldoFmt}${r.saldo_estado==='pronto'?' ✓':r.saldo_estado==='revisao'?' ⚠':''}</td>`
-        :`<td style="background:${r.saldo_estado==='pronto'?'#dcfce7':r.saldo_estado==='revisao'?'#fef9c3':saldoBg||rowBg};text-align:right;padding:7px 10px">${saldoFmt}${r.saldo_estado==='pronto'?' ✓':r.saldo_estado==='revisao'?' ⚠':''}</td>`}
+        ?`<td style="background:${rowBg};text-align:right;font-weight:${saldo!=null?'600':'400'};padding:7px 10px;cursor:pointer" onclick="editIvaTri('${c.id}',${trimestre},'saldo_iva','${saldo||''}',this)">${saldoFmt}</td>`
+        :`<td style="background:${rowBg};text-align:right;padding:7px 10px">${saldoFmt}</td>`}
+      <td style="background:${r.saldo_estado==='pronto'?'#dcfce7':r.saldo_estado==='revisao'?'#fef9c3':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="editEstadoSaldo(this,'${c.id}',${trimestre},null,'${r.saldo_estado||''}')">
+        ${r.saldo_estado==='pronto'?'<span style="color:#15803d;font-weight:600">✓ Pronto</span>':r.saldo_estado==='revisao'?'<span style="color:#b45309;font-weight:600">⚠ Revisão</span>':'<span style="color:#9ca3af;font-size:11px">— definir</span>'}
+      </td>
       ${ec(c.id,'recapitulativa',r.recapitulativa,rowBg)}
       ${editable
         ?`<td style="background:${envioBg||rowBg};text-align:center;font-weight:${r.envio&&r.envio!=='-'?'600':'400'}" onclick="editIvaTri('${c.id}',${trimestre},'envio','${r.envio||''}',this)">${r.envio||''}</td>`
         :`<td style="background:${envioBg||rowBg};text-align:center">${r.envio||''}</td>`}
+      <td style="background:${r.reembolso==='sim'?'#f5f3ff':rowBg};text-align:center;cursor:pointer" onclick="toggleReembolso(this,'${c.id}',${trimestre},null,'${r.reembolso||''}')">${r.reembolso==='sim'?'<span style="color:#7e22ce;font-weight:700">✓ Pedir</span>':'<span style="color:#d8b4fe;font-size:11px">—</span>'}</td>
       ${editable
         ?`<td style="padding:7px 10px;color:#5c5a54" onclick="editIvaTri('${c.id}',${trimestre},'obs','${(String(r.obs||'')).replace(/'/g,"\\'")}',this)">${r.obs||''}</td>`
         :`<td style="padding:7px 10px;color:#5c5a54">${r.obs||''}</td>`}
@@ -1020,6 +1099,81 @@ function editRespExecucao(td, oldVal, onSave) {
   sel.onblur = done;
   sel.onchange = () => { sel.blur(); };
   sel.onkeydown = e => { if (e.key==='Escape') td.innerHTML = orig; };
+}
+
+// ── Reembolso — dropdown para marcar/anular ──────────────
+async function toggleReembolso(td, clienteId, trimestre, mes, current) {
+  if (td.querySelector('select')) return;
+  const sel = document.createElement('select');
+  sel.style.cssText = 'width:100%;padding:3px 4px;border:1px solid #c4b5fd;border-radius:4px;font-size:11px;background:#f5f3ff;outline:none;cursor:pointer';
+  sel.innerHTML = `
+    <option value="">— sem pedido —</option>
+    <option value="sim" ${current==='sim'?'selected':''}>✓ Pedir reembolso</option>
+  `;
+  td.innerHTML = ''; td.appendChild(sel); sel.focus();
+  const save = async () => {
+    const val = sel.value || null;
+    const table = trimestre ? 'iva_trimestral' : 'iva_mensal';
+    const ex = trimestre
+      ? await sb.from(table).select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('trimestre',trimestre).single()
+      : await sb.from(table).select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('mes',mes).single();
+    let error;
+    if (ex.data) {
+      ({error} = await sb.from(table).update({reembolso:val,updated_by:currentUser.nome}).eq('id',ex.data.id));
+    } else {
+      const filter = trimestre?{cliente_id:clienteId,ano:2026,trimestre}:{cliente_id:clienteId,ano:2026,mes};
+      ({error} = await sb.from(table).insert({...filter,reembolso:val,updated_by:currentUser.nome}));
+    }
+    if (!error) {
+      td.style.background = val ? '#f5f3ff' : '';
+      td.innerHTML = val
+        ? '<span style="color:#7e22ce;font-weight:700">✓ Pedir</span>'
+        : '<span style="color:#d8b4fe;font-size:11px">—</span>';
+      toast(val ? 'Reembolso assinalado' : 'Pedido removido');
+    } else { toast('Erro: '+error.message,'error'); td.innerHTML = current==='sim'?'<span style="color:#7e22ce;font-weight:700">✓ Pedir</span>':'<span style="color:#d8b4fe;font-size:11px">—</span>'; }
+  };
+  sel.onchange = () => save();
+  sel.onblur = () => { if (td.querySelector('select')) save(); };
+  sel.onkeydown = e => { if (e.key==='Escape') td.innerHTML = current==='sim'?'<span style="color:#7e22ce;font-weight:700">✓ Pedir</span>':'<span style="color:#d8b4fe;font-size:11px">—</span>'; };
+}
+
+// ── Dropdown de estado do Saldo ──────────────────────────
+function editEstadoSaldo(td, clienteId, trimestre, mes, current) {
+  if (td.querySelector('select')) return;
+  const sel = document.createElement('select');
+  sel.style.cssText = 'width:100%;padding:3px 4px;border:1px solid #93c5fd;border-radius:4px;font-size:11px;background:#eff6ff;outline:none;cursor:pointer';
+  sel.innerHTML = `
+    <option value="">— definir —</option>
+    <option value="pronto" ${current==='pronto'?'selected':''}>✓ Pronto a enviar</option>
+    <option value="revisao" ${current==='revisao'?'selected':''}>⚠ Precisa revisão</option>
+  `;
+  td.innerHTML = ''; td.appendChild(sel); sel.focus();
+  const save = async () => {
+    const val = sel.value;
+    const table = trimestre ? 'iva_trimestral' : 'iva_mensal';
+    const filter = trimestre
+      ? {cliente_id: clienteId, ano: 2026, trimestre}
+      : {cliente_id: clienteId, ano: 2026, mes};
+    const ex = trimestre
+      ? await sb.from(table).select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('trimestre',trimestre).single()
+      : await sb.from(table).select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('mes',mes).single();
+    let error;
+    if (ex.data) {
+      ({error} = await sb.from(table).update({saldo_estado: val||null, updated_by: currentUser.nome}).eq('id',ex.data.id));
+    } else {
+      ({error} = await sb.from(table).insert({...filter, saldo_estado: val||null, updated_by: currentUser.nome}));
+    }
+    if (!error) {
+      td.style.background = val==='pronto'?'#dcfce7':val==='revisao'?'#fef9c3':'';
+      td.innerHTML = val==='pronto'?'<span style="color:#15803d;font-weight:600">✓ Pronto</span>'
+        :val==='revisao'?'<span style="color:#b45309;font-weight:600">⚠ Revisão</span>'
+        :'<span style="color:#9ca3af;font-size:11px">— definir</span>';
+      toast('Estado guardado');
+    } else { toast('Erro: '+error.message,'error'); td.innerHTML = '—'; }
+  };
+  sel.onchange = () => save();
+  sel.onblur = () => { if (td.querySelector('select')) save(); };
+  sel.onkeydown = e => { if (e.key==='Escape') { td.innerHTML='—'; } };
 }
 
 // ── Ciclo de estado do Saldo (clique alterna verde/amarelo/vazio) ──
@@ -1057,7 +1211,11 @@ function cycleSaldo(td, clienteId, trimestre, mes, table) {
 }
 
 async function editIvaTri(clienteId,trimestre,field,oldVal,td){
-  editCell(td,oldVal,async(newVal)=>{
+  const dateFields=['entrada_m1','bancos_m1','int_vendas_m1','lancamento_m1',
+    'entrada_m2','bancos_m2','int_vendas_m2','lancamento_m2',
+    'entrada_m3','bancos_m3','int_vendas_m3','lancamento_m3','envio','recapitulativa'];
+  const editFn = dateFields.includes(field) ? editDateCell : editCell;
+  editFn(td,oldVal,async(newVal)=>{
     const ex=await sb.from('iva_trimestral').select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('trimestre',trimestre).single();
     let error;
     if(ex.data){({error}=await sb.from('iva_trimestral').update({[field]:newVal||null,updated_by:currentUser.nome}).eq('id',ex.data.id));}
@@ -1115,6 +1273,8 @@ async function loadIvaMen(){
     const eb=r.envio?'#dcfce7':'';
     const db=r.docs_em_falta?'#fee2e2':'';
 
+    const temDadosMen = r.entrada||r.lancamento||r.saldo_iva||r.envio;
+    const rowBg = temDadosMen ? (rowIdx%2===0?'#fafaf9':'#fff') : (rowIdx%2===0?'#fff1f2':'#fff5f5');
     const cid=c.id;
     return `<tr>
       <td style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600">${c.codigo}</td>
@@ -1126,7 +1286,10 @@ async function loadIvaMen(){
         :`<td style="text-align:center">${r.resp_execucao||''}</td>`}
       ${editable?`<td onclick="editIvaMen('${cid}',${mes},'sim_iva','${(r.sim_iva||'').replace(/'/g,"\\'")}',this)">${r.sim_iva||''}</td>`:`<td>${r.sim_iva||''}</td>`}
       ${editable?`<td style="background:${db}" onclick="editIvaMen('${cid}',${mes},'docs_em_falta','${r.docs_em_falta||''}',this)">${r.docs_em_falta||''}</td>`:`<td style="background:${db}">${r.docs_em_falta||''}</td>`}
-      ${editable?`<td data-estado="${r.saldo_estado||''}" style="background:${r.saldo_estado==='pronto'?'#dcfce7':r.saldo_estado==='revisao'?'#fef9c3':sb_};font-weight:500;cursor:pointer" title="Clique: editar valor | Duplo clique: mudar estado" onclick="editIvaMen('${cid}',${mes},'saldo_iva','${saldo||''}',this)" ondblclick="cycleSaldo(this,'${cid}',null,${mes},'men')">${sf}${r.saldo_estado==='pronto'?' ✓':r.saldo_estado==='revisao'?' ⚠':''}</td>`:`<td style="background:${r.saldo_estado==='pronto'?'#dcfce7':r.saldo_estado==='revisao'?'#fef9c3':sb_}">${sf}${r.saldo_estado==='pronto'?' ✓':r.saldo_estado==='revisao'?' ⚠':''}</td>`}
+      ${editable?`<td style="background:${sb_||rowBg};font-weight:500;cursor:pointer" onclick="editIvaMen('${cid}',${mes},'saldo_iva','${saldo||''}',this)">${sf}</td>`:`<td style="background:${sb_||rowBg};font-weight:500">${sf}</td>`}
+      <td style="background:${r.saldo_estado==='pronto'?'#dcfce7':r.saldo_estado==='revisao'?'#fef9c3':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="editEstadoSaldo(this,'${cid}',null,${mes},'${r.saldo_estado||''}')">
+        ${r.saldo_estado==='pronto'?'<span style=\"color:#15803d;font-weight:600\">✓ Pronto</span>':r.saldo_estado==='revisao'?'<span style=\"color:#b45309;font-weight:600\">⚠ Revisão</span>':'<span style=\"color:#9ca3af;font-size:11px\">— definir</span>'}
+      </td>
       ${editable?`<td style="background:${eb};font-weight:${r.envio?'600':'400'}" onclick="editIvaMen('${cid}',${mes},'envio','${r.envio||''}',this)">${r.envio||''}</td>`:`<td style="background:${eb}">${r.envio||''}</td>`}
       ${editable?`<td onclick="editIvaMen('${cid}',${mes},'obs','${(r.obs||'').replace(/'/g,"\\'")}',this)">${r.obs||''}</td>`:`<td>${r.obs||''}</td>`}
     </tr>`;
@@ -1134,7 +1297,9 @@ async function loadIvaMen(){
 }
 
 async function editIvaMen(clienteId,mes,field,oldVal,td){
-  editCell(td,oldVal,async(newVal)=>{
+  const dateFieldsMen=['entrada','bancos_acc','arquivo','int_vendas','lancamento','envio'];
+  const editFnMen = dateFieldsMen.includes(field) ? editDateCell : editCell;
+  editFnMen(td,oldVal,async(newVal)=>{
     const ex=await sb.from('iva_mensal').select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('mes',mes).single();
     let error;
     if(ex.data){({error}=await sb.from('iva_mensal').update({[field]:newVal||null,updated_by:currentUser.nome}).eq('id',ex.data.id));}
@@ -1289,80 +1454,124 @@ async function loadResumo(){
   // ── Secção por responsável ──────────────────────────────
   // Buscar todos os clientes com IVA + registos do trimestre actual
   const trimActual = Math.ceil((new Date().getMonth()+1)/3);
+  const mesActual = new Date().getMonth()+1;
   const{data:allClis}=await sb.from('clientes').select('id,codigo,nome,responsavel,tem_iva_trimestral,tem_iva_mensal').eq('estado','Ativo');
-  const{data:triRegsResp}=await sb.from('iva_trimestral').select('cliente_id,saldo_iva,saldo_estado,envio,resp_execucao').eq('ano',2026).eq('trimestre',trimActual);
-  const mesActual=new Date().getMonth()+1;
-  const{data:menRegsResp}=await sb.from('iva_mensal').select('cliente_id,saldo_iva,saldo_estado,envio,resp_execucao').eq('ano',2026).eq('mes',mesActual);
 
-  const triMap={};(triRegsResp||[]).forEach(r=>{triMap[r.cliente_id]=r;});
-  const menMap={};(menRegsResp||[]).forEach(r=>{menMap[r.cliente_id]=r;});
+  // Buscar TODOS os registos do ano para poder filtrar por período
+  const{data:triAll}=await sb.from('iva_trimestral').select('cliente_id,trimestre,saldo_iva,saldo_estado,envio,resp_execucao').eq('ano',2026);
+  const{data:menAll}=await sb.from('iva_mensal').select('cliente_id,mes,saldo_iva,saldo_estado,envio,resp_execucao').eq('ano',2026);
 
-  // Agrupar por responsável
-  const byResp={};
-  (allClis||[]).forEach(c=>{
-    if(!c.tem_iva_trimestral&&!c.tem_iva_mensal)return;
-    const resp=c.responsavel||'Sem responsável';
-    if(!byResp[resp])byResp[resp]={total:0,fechados:0,prontos:0,revisao:0,alancar:0,porOutro:0};
-    byResp[resp].total++;
-    const reg=c.tem_iva_trimestral?triMap[c.id]:menMap[c.id];
-    if(!reg){byResp[resp].alancar++;return;}
-    // Submetido = envio preenchido
-    if(reg.envio&&reg.envio!=='-'){
-      byResp[resp].fechados++;
-      // Executado por outro responsável?
-      if(reg.resp_execucao&&reg.resp_execucao!==resp)byResp[resp].porOutro++;
-    } else if(reg.saldo_estado==='pronto'){
-      byResp[resp].prontos++;
-    } else if(reg.saldo_estado==='revisao'){
-      byResp[resp].revisao++;
-    } else {
-      byResp[resp].alancar++;
-    }
-  });
+  // Função que calcula stats por responsável para um período específico
+  function calcByResp(clis, triRegs, menRegs) {
+    const triMap={};(triRegs||[]).forEach(r=>{triMap[r.cliente_id]=r;});
+    const menMap={};(menRegs||[]).forEach(r=>{menMap[r.cliente_id]=r;});
+    const byResp={};
+    (clis||[]).forEach(c=>{
+      if(!c.tem_iva_trimestral&&!c.tem_iva_mensal)return;
+      const resp=c.responsavel||'Sem responsável';
+      if(!byResp[resp])byResp[resp]={total:0,sub:0,prontos:0,revisao:0,alancar:0,execPorOutro:0};
+      byResp[resp].total++;
+      const reg=c.tem_iva_trimestral?triMap[c.id]:menMap[c.id];
+      if(!reg){byResp[resp].alancar++;return;}
+      const submetido=reg.envio&&reg.envio!=='-';
+      const execPorOutro=submetido&&reg.resp_execucao&&reg.resp_execucao!==resp;
+      if(submetido){
+        byResp[resp].sub++;
+        if(execPorOutro) byResp[resp].execPorOutro++;
+      } else if(reg.saldo_estado==='pronto') byResp[resp].prontos++;
+      else if(reg.saldo_estado==='revisao') byResp[resp].revisao++;
+      else byResp[resp].alancar++;
+    });
+    return byResp;
+  }
 
-  const MESES_LABEL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const TRI_LABEL=['1º Trimestre','2º Trimestre','3º Trimestre','4º Trimestre'];
-
-  const respRows=Object.entries(byResp).sort((a,b)=>a[0].localeCompare(b[0])).map(([resp,s])=>{
-    const pct=s.total>0?Math.round(s.fechados/s.total*100):0;
-    const barColor=pct===100?'#16a34a':pct>=60?'#d97706':'#dc2626';
-    return `<tr style="border-bottom:1px solid #e2e0d8">
-      <td style="padding:10px 14px;font-weight:600;font-size:13px">${resp}</td>
-      <td style="padding:10px 14px;text-align:center;font-size:13px;color:#1d4ed8;font-weight:600">${s.total}</td>
-      <td style="padding:10px 14px;text-align:center;font-size:13px;color:#15803d;font-weight:700">${s.fechados}</td>
-      <td style="padding:10px 14px;text-align:center;font-size:13px;color:#15803d">${s.prontos}</td>
-      <td style="padding:10px 14px;text-align:center;font-size:13px;color:#b45309">${s.revisao}</td>
-      <td style="padding:10px 14px;text-align:center;font-size:13px;color:${s.alancar>0?'#b91c1c':'#6b7280'};font-weight:${s.alancar>0?'700':'400'}">${s.alancar}</td>
-      <td style="padding:10px 14px;text-align:center;font-size:12px;color:#7c3aed">${s.porOutro>0?`${s.porOutro} por outro resp.`:'-'}</td>
-      <td style="padding:10px 14px;min-width:120px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width .3s"></div>
+  // Gerar tabela de responsáveis
+  function makeRespTable(byResp, periodo) {
+    const rows=Object.entries(byResp).sort((a,b)=>a[0].localeCompare(b[0])).map(([resp,s])=>{
+      const pct=s.total>0?Math.round(s.sub/s.total*100):0;
+      const barColor=pct===100?'#16a34a':pct>=60?'#d97706':'#dc2626';
+      return `<tr style="border-bottom:1px solid #e2e0d8">
+        <td style="padding:8px 14px;font-weight:600;font-size:13px">${resp}</td>
+        <td style="padding:8px 12px;text-align:center;font-size:13px;color:#1d4ed8;font-weight:600">${s.total}</td>
+        <td style="padding:8px 12px;text-align:center;font-size:13px;color:#15803d;font-weight:700">${s.sub}</td>
+        <td style="padding:8px 12px;text-align:center;font-size:13px;color:#15803d">${s.prontos}</td>
+        <td style="padding:8px 12px;text-align:center;font-size:13px;color:#b45309">${s.revisao}</td>
+        <td style="padding:8px 12px;text-align:center;font-size:13px;color:${s.alancar>0?'#b91c1c':'#6b7280'};font-weight:${s.alancar>0?'700':'400'}">${s.alancar}</td>
+        <td style="padding:8px 12px;text-align:center;font-size:12px;color:#7c3aed">${s.execPorOutro>0?`<span style="background:#ede9fe;padding:2px 7px;border-radius:20px">${s.execPorOutro} por outro</span>`:'-'}</td>
+        <td style="padding:8px 12px;min-width:120px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px"></div>
+            </div>
+            <span style="font-size:11px;font-weight:600;color:${barColor};min-width:30px">${pct}%</span>
           </div>
-          <span style="font-size:11px;font-weight:600;color:${barColor};min-width:30px">${pct}%</span>
-        </div>
-      </td>
-    </tr>`;
+        </td>
+      </tr>`;
+    }).join('');
+
+    const thead=`<thead><tr style="background:#f1f0ec">
+      <th style="padding:8px 14px;text-align:left;font-size:11px;font-weight:600;color:#5c5a54;border-bottom:1px solid #e2e0d8">Responsável</th>
+      <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:600;background:#eff6ff;border-bottom:1px solid #e2e0d8">Total</th>
+      <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:600;background:#dcfce7;border-bottom:1px solid #e2e0d8">Submetidos</th>
+      <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:600;background:#d1fae5;border-bottom:1px solid #e2e0d8">Prontos</th>
+      <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:600;background:#fef9c3;border-bottom:1px solid #e2e0d8">Revisão</th>
+      <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:600;background:#fee2e2;border-bottom:1px solid #e2e0d8">A lançar</th>
+      <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:600;background:#ede9fe;border-bottom:1px solid #e2e0d8">Exec. por outro</th>
+      <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:600;border-bottom:1px solid #e2e0d8">Progresso</th>
+    </tr></thead>`;
+
+    return `<div style="border:1px solid #e2e0d8;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse">${thead}<tbody>${rows}</tbody></table>
+    </div>`;
+  }
+
+  // Período actual (trimestre ou mês conforme o tipo)
+  const triActualRegs = (triAll||[]).filter(r=>r.trimestre===trimActual);
+  const menActualRegs = (menAll||[]).filter(r=>r.mes===mesActual);
+  const byRespActual = calcByResp(allClis, triActualRegs, menActualRegs);
+
+  const TRI_LABELS_S=['1º Trim (Jan-Mar)','2º Trim (Abr-Jun)','3º Trim (Jul-Set)','4º Trim (Out-Dez)'];
+  const MESES_ABR_S=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  // Gerar mini-tabela por todos os trimestres
+  const triSections = [1,2,3,4].map(t=>{
+    const regs=(triAll||[]).filter(r=>r.trimestre===t);
+    const br=calcByResp(allClis.filter(c=>c.tem_iva_trimestral), regs, []);
+    const total=Object.values(br).reduce((s,v)=>s+v.total,0);
+    if(total===0)return '';
+    return `<div style="margin-bottom:16px">
+      <div style="background:#1e3a8a;color:#fff;padding:7px 14px;border-radius:6px 6px 0 0;font-size:12px;font-weight:600">${TRI_LABELS_S[t-1]}</div>
+      ${makeRespTable(br,'tri')}
+    </div>`;
+  }).join('');
+
+  const menSections = Array.from({length:12},(_,i)=>i+1).map(m=>{
+    const regs=(menAll||[]).filter(r=>r.mes===m);
+    const br=calcByResp(allClis.filter(c=>c.tem_iva_mensal), [], regs);
+    const total=Object.values(br).reduce((s,v)=>s+v.total,0);
+    if(total===0)return '';
+    return `<div style="margin-bottom:16px">
+      <div style="background:#065f46;color:#fff;padding:7px 14px;border-radius:6px 6px 0 0;font-size:12px;font-weight:600">${MESES_FULL[m-1]}</div>
+      ${makeRespTable(br,'men')}
+    </div>`;
   }).join('');
 
   const respSection=`<div style="margin-top:28px">
-    <div style="background:#374151;color:#fff;padding:9px 16px;border-radius:8px 8px 0 0;font-size:13px;font-weight:600">
-      Ponto de situação por Responsável — Período actual 2026
+    <div style="background:#374151;color:#fff;padding:10px 16px;border-radius:8px 8px 0 0;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between">
+      <span>Ponto de situação por Responsável</span>
+      <div style="display:flex;gap:6px">
+        <button onclick="document.getElementById('resp-view-actual').style.display='block';document.getElementById('resp-view-tri').style.display='none';document.getElementById('resp-view-men').style.display='none';this.style.background='#4b5563';document.getElementById('btn-resp-tri').style.background='transparent';document.getElementById('btn-resp-men').style.background='transparent'" id="btn-resp-actual" style="padding:4px 10px;border:1px solid rgba(255,255,255,.3);border-radius:4px;background:#4b5563;color:#fff;font-size:11px;cursor:pointer">Período actual</button>
+        <button onclick="document.getElementById('resp-view-actual').style.display='none';document.getElementById('resp-view-tri').style.display='block';document.getElementById('resp-view-men').style.display='none';this.style.background='#4b5563';document.getElementById('btn-resp-actual').style.background='transparent';document.getElementById('btn-resp-men').style.background='transparent'" id="btn-resp-tri" style="padding:4px 10px;border:1px solid rgba(255,255,255,.3);border-radius:4px;background:transparent;color:#fff;font-size:11px;cursor:pointer">Por Trimestre</button>
+        <button onclick="document.getElementById('resp-view-actual').style.display='none';document.getElementById('resp-view-tri').style.display='none';document.getElementById('resp-view-men').style.display='block';this.style.background='#4b5563';document.getElementById('btn-resp-actual').style.background='transparent';document.getElementById('btn-resp-tri').style.background='transparent'" id="btn-resp-men" style="padding:4px 10px;border:1px solid rgba(255,255,255,.3);border-radius:4px;background:transparent;color:#fff;font-size:11px;cursor:pointer">Por Mês</button>
+      </div>
     </div>
-    <div style="border:1px solid #e2e0d8;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:#f1f0ec">
-          <th style="padding:8px 14px;text-align:left;font-size:11px;font-weight:600;color:#5c5a54;border-bottom:1px solid #e2e0d8">Responsável</th>
-          <th style="padding:8px 14px;text-align:center;font-size:11px;font-weight:600;background:#eff6ff;border-bottom:1px solid #e2e0d8">Total</th>
-          <th style="padding:8px 14px;text-align:center;font-size:11px;font-weight:600;background:#dcfce7;border-bottom:1px solid #e2e0d8">Submetidos</th>
-          <th style="padding:8px 14px;text-align:center;font-size:11px;font-weight:600;background:#d1fae5;border-bottom:1px solid #e2e0d8">Prontos</th>
-          <th style="padding:8px 14px;text-align:center;font-size:11px;font-weight:600;background:#fef9c3;border-bottom:1px solid #e2e0d8">Revisão</th>
-          <th style="padding:8px 14px;text-align:center;font-size:11px;font-weight:600;background:#fee2e2;border-bottom:1px solid #e2e0d8">A lançar</th>
-          <th style="padding:8px 14px;text-align:center;font-size:11px;font-weight:600;background:#ede9fe;border-bottom:1px solid #e2e0d8">Executados por outro</th>
-          <th style="padding:8px 14px;text-align:left;font-size:11px;font-weight:600;border-bottom:1px solid #e2e0d8">Progresso</th>
-        </tr></thead>
-        <tbody>${respRows}</tbody>
-      </table>
+    <div style="background:#fff;border:1px solid #e2e0d8;border-top:none;border-radius:0 0 8px 8px;padding:16px">
+      <div id="resp-view-actual">
+        <div style="font-size:11px;color:#9b9890;margin-bottom:10px;font-style:italic">IVA Trimestral: ${TRI_LABELS_S[trimActual-1]} | IVA Mensal: ${MESES_FULL[mesActual-1]}</div>
+        ${makeRespTable(byRespActual,'actual')}
+      </div>
+      <div id="resp-view-tri" style="display:none">${triSections||'<p style="color:#9b9890;font-size:13px;padding:12px">Sem dados de IVA Trimestral ainda.</p>'}</div>
+      <div id="resp-view-men" style="display:none">${menSections||'<p style="color:#9b9890;font-size:13px;padding:12px">Sem dados de IVA Mensal ainda.</p>'}</div>
     </div>
   </div>`;
 
@@ -1375,8 +1584,7 @@ async function loadResumo(){
     </div>
     ${section('IVA Trimestral 2026','#1e40af',triByTrim,['1º Trimestre (Jan-Mar)','2º Trimestre (Abr-Jun)','3º Trimestre (Jul-Set)','4º Trimestre (Out-Dez)'])}
     ${section('IVA Mensal 2026','#065f46',menByMes,MESES_FULL)}
-    ${respSection}`;
-}
+    ${can('canSeeRespSection') ? respSection : ''}`;
 }
 
 // ── RESPONSÁVEIS (admin) ────────────────────────────────
