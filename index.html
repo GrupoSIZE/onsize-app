@@ -85,6 +85,19 @@ select.filter:focus{border-color:#93c5fd}
 
 /* ── TABLE ── */
 .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow)}
+/* Colunas fixas */
+.sticky-col{position:sticky;z-index:3;background:inherit}
+.sticky-col-1{left:0;min-width:70px}
+.sticky-col-2{left:70px;min-width:220px}
+.sticky-col-3{left:290px;min-width:110px}
+/* Sombra na última coluna fixa */
+.sticky-col-3::after{content:'';position:absolute;right:-6px;top:0;bottom:0;width:6px;background:linear-gradient(to right,rgba(0,0,0,.08),transparent);pointer-events:none}
+/* Cabeçalhos sticky no topo */
+thead th{position:sticky;z-index:2}
+thead tr:first-child th{top:0;z-index:4}
+thead tr:nth-child(2) th{top:33px;z-index:3}
+/* Cabeçalhos fixos das colunas fixas */
+thead th.sticky-col{z-index:5!important}
 table{width:100%;border-collapse:collapse}
 thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
 th{padding:8px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;cursor:pointer;user-select:none}
@@ -221,6 +234,7 @@ tbody tr:hover{background:#fafaf9}
     <a class="nav-tab" data-page="iva-men">IVA Mensal</a>
     <a class="nav-tab" data-page="cope">COPE & INE</a>
     <a class="nav-tab" data-page="salarios">Salários & DMR</a>
+    <a class="nav-tab" data-page="independentes">Independentes</a>
     <a class="nav-tab" data-page="resumo">Resumo</a>
     <a class="nav-tab hidden" data-page="responsaveis" id="tab-responsaveis">Responsáveis</a>
   </div>
@@ -286,15 +300,19 @@ tbody tr:hover{background:#fafaf9}
     <div class="search-wrap"><span class="search-icon">🔍</span>
       <input type="text" id="search-tri" placeholder="Pesquisar cliente...">
     </div>
-    <div style="display:flex;gap:4px;margin-left:4px" id="filter-tri-estado-btns">
+    <div style="display:flex;gap:4px;margin-left:4px;flex-wrap:wrap" id="filter-tri-estado-btns">
       <button class="btn-estado active" data-val="" onclick="setEstadoFilter('tri','')">Todos</button>
       <button class="btn-estado" data-val="submetido" onclick="setEstadoFilter('tri','submetido')" style="background:#dcfce7;color:#15803d;border-color:#bbf7d0">✅ Submetidos</button>
       <button class="btn-estado" data-val="pronto" onclick="setEstadoFilter('tri','pronto')" style="background:#d1fae5;color:#065f46;border-color:#a7f3d0">🟢 Prontos</button>
       <button class="btn-estado" data-val="revisao" onclick="setEstadoFilter('tri','revisao')" style="background:#fef9c3;color:#b45309;border-color:#fde68a">🟡 Revisão</button>
       <button class="btn-estado" data-val="alancar" onclick="setEstadoFilter('tri','alancar')" style="background:#fee2e2;color:#b91c1c;border-color:#fecaca">⬜ A lançar</button>
+      <button class="btn-estado" data-val="reembolso" onclick="setEstadoFilter('tri','reembolso')" style="background:#f5f3ff;color:#7e22ce;border-color:#ddd6fe">💜 Reembolso</button>
+      <button class="btn-estado" data-val="plano_iva" onclick="setEstadoFilter('tri','plano_iva')" style="background:#fef3c7;color:#92400e;border-color:#fde68a">📋 Plano IVA</button>
+      <button class="btn-estado" data-val="com_recapit" onclick="setEstadoFilter('tri','com_recapit')" style="background:#dcfce7;color:#15803d;border-color:#bbf7d0">📅 Com Recapit.</button>
+      <button class="btn-estado" data-val="sem_recapit" onclick="setEstadoFilter('tri','sem_recapit')" style="background:#f1f5f9;color:#64748b;border-color:#cbd5e1">✕ Sem Recapit.</button>
     </div>
   </div>
-  <div class="table-wrap" style="overflow-x:auto">
+  <div class="table-wrap" style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 160px)">
     <table id="table-iva-tri"><thead id="thead-iva-tri-wrap"></thead>
     <tbody id="tbody-iva-tri"><tr><td colspan="21"><div class="loading"><div class="spinner"></div></div></td></tr></tbody>
     </table>
@@ -316,24 +334,29 @@ tbody tr:hover{background:#fafaf9}
     <div class="search-wrap"><span class="search-icon">🔍</span>
       <input type="text" id="search-men" placeholder="Pesquisar cliente...">
     </div>
-    <div style="display:flex;gap:4px;margin-left:4px" id="filter-men-estado-btns">
+    <div style="display:flex;gap:4px;margin-left:4px;flex-wrap:wrap" id="filter-men-estado-btns">
       <button class="btn-estado active" data-val="" onclick="setEstadoFilter('men','')">Todos</button>
       <button class="btn-estado" data-val="submetido" onclick="setEstadoFilter('men','submetido')" style="background:#dcfce7;color:#15803d;border-color:#bbf7d0">✅ Submetidos</button>
       <button class="btn-estado" data-val="pronto" onclick="setEstadoFilter('men','pronto')" style="background:#d1fae5;color:#065f46;border-color:#a7f3d0">🟢 Prontos</button>
       <button class="btn-estado" data-val="revisao" onclick="setEstadoFilter('men','revisao')" style="background:#fef9c3;color:#b45309;border-color:#fde68a">🟡 Revisão</button>
       <button class="btn-estado" data-val="alancar" onclick="setEstadoFilter('men','alancar')" style="background:#fee2e2;color:#b91c1c;border-color:#fecaca">⬜ A lançar</button>
+      <button class="btn-estado" data-val="reembolso" onclick="setEstadoFilter('men','reembolso')" style="background:#f5f3ff;color:#7e22ce;border-color:#ddd6fe">💜 Reembolso</button>
+      <button class="btn-estado" data-val="plano_iva" onclick="setEstadoFilter('men','plano_iva')" style="background:#fef3c7;color:#92400e;border-color:#fde68a">📋 Plano IVA</button>
     </div>
   </div>
   <div class="table-wrap" style="overflow-x:auto">
     <table><thead><tr>
-      <th style="min-width:70px">Cód.</th><th style="min-width:220px">Cliente</th>
-      <th style="min-width:100px">Responsável</th>
+      <th class="sticky-col sticky-col-1" style="min-width:70px;background:#f1f0ec;border-right:1px solid #e2e0d8">Cód.</th>
+      <th class="sticky-col sticky-col-2" style="min-width:220px;background:#f1f0ec">Cliente</th>
+      <th class="sticky-col sticky-col-3" style="min-width:110px;background:#f1f0ec">Responsável</th>
       <th style="min-width:80px">Entrada</th><th style="min-width:80px">Bancos ACC</th>
       <th style="min-width:80px">Arquivo</th><th style="min-width:80px">Int.Vendas</th>
       <th style="min-width:80px">Lançamento</th><th style="min-width:100px">Resp. Execução</th>
       <th style="min-width:70px">Sim IVA</th>
       <th style="min-width:100px;background:#fef2f2">Docs em Falta</th>
       <th style="min-width:100px;background:#f0fdf4">Saldo IVA €</th>
+      <th style="min-width:80px;background:#fef3c7">Pedir Plano</th>
+      <th style="min-width:80px;background:#dcfce7">Plano Exec.</th>
       <th style="min-width:80px;background:#f0fdf4">Estado</th>
       <th style="min-width:80px;background:#f0fdf4">Envio</th>
       <th style="min-width:80px;background:#f5f3ff">Reembolso</th>
@@ -353,8 +376,9 @@ tbody tr:hover{background:#fafaf9}
   </div>
   <div class="table-wrap" style="overflow-x:auto">
     <table><thead><tr>
-      <th style="min-width:70px">Cód.</th><th style="min-width:220px">Cliente</th>
-      <th style="min-width:100px">Responsável</th>
+      <th class="sticky-col sticky-col-1" style="min-width:70px;background:#f1f0ec;border-right:1px solid #e2e0d8">Cód.</th>
+      <th class="sticky-col sticky-col-2" style="min-width:220px;background:#f1f0ec">Cliente</th>
+      <th class="sticky-col sticky-col-3" style="min-width:110px;background:#f1f0ec">Responsável</th>
       <th style="min-width:75px;background:#dbeafe">Jan</th><th style="min-width:75px;background:#dbeafe">Fev</th>
       <th style="min-width:75px;background:#bfdbfe">Mar</th><th style="min-width:75px;background:#bfdbfe">Abr</th>
       <th style="min-width:75px;background:#93c5fd">Mai</th><th style="min-width:75px;background:#93c5fd">Jun</th>
@@ -383,8 +407,9 @@ tbody tr:hover{background:#fafaf9}
   </div>
   <div class="table-wrap" style="overflow-x:auto">
     <table><thead><tr>
-      <th style="min-width:70px">Cód.</th><th style="min-width:220px">Cliente</th>
-      <th style="min-width:100px">Responsável</th>
+      <th class="sticky-col sticky-col-1" style="min-width:70px;background:#f1f0ec;border-right:1px solid #e2e0d8">Cód.</th>
+      <th class="sticky-col sticky-col-2" style="min-width:220px;background:#f1f0ec">Cliente</th>
+      <th class="sticky-col sticky-col-3" style="min-width:110px;background:#f1f0ec">Responsável</th>
       <th style="min-width:100px">Obs Mensal</th>
       <th style="min-width:90px;background:#f0fdf4">Recibos</th>
       <th style="min-width:90px;background:#f0fdf4">Env. Recibos</th>
@@ -394,6 +419,38 @@ tbody tr:hover{background:#fafaf9}
     </tr></thead>
     <tbody id="tbody-sal"><tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr></tbody>
     </table>
+  </div>
+</div>
+
+<!-- INDEPENDENTES -->
+<div class="page" id="page-independentes">
+  <div class="toolbar">
+    <span class="toolbar-title">Independentes</span>
+    <span class="badge-count" id="count-ind">—</span>
+    <select class="filter" id="filter-ind-resp"><option value="">Todos os responsáveis</option></select>
+    <select class="filter" id="filter-ind-trim">
+      <option value="1">1T (Out/Nov/Dez 2025)</option>
+      <option value="2">2T (Jan/Fev/Mar 2026)</option>
+      <option value="3">3T (Abr/Mai/Jun 2026)</option>
+      <option value="4">4T (Jul/Ago/Set 2026)</option>
+    </select>
+  </div>
+  <div class="table-wrap" style="overflow-x:auto">
+    <table><thead><tr>
+      <th style="min-width:70px">Cód.</th>
+      <th style="min-width:220px">Cliente</th>
+      <th style="min-width:100px">Responsável</th>
+      <th style="min-width:100px;background:#ede9fe">Opção SS</th>
+      <th style="min-width:100px;background:#ddd6fe">Valor a Pagar</th>
+      <th style="min-width:90px;background:#c4b5fd;color:#fff">Val. Declarado</th>
+      <th style="min-width:90px;background:#a78bfa;color:#fff">Val. a Pagar</th>
+      <th style="min-width:100px;background:#8b5cf6;color:#fff">Envio Declaração</th>
+      <th style="min-width:110px;background:#7c3aed;color:#fff">Comunicação Cliente</th>
+      <th style="min-width:140px">Obs</th>
+    </tr></thead>
+    <tbody id="tbody-ind">
+      <tr><td colspan="10"><div class="loading"><div class="spinner"></div> A carregar...</div></td></tr>
+    </tbody></table>
   </div>
 </div>
 
@@ -805,7 +862,7 @@ async function initApp() {
   });
 
   // Popular dropdowns com responsáveis
-  ['filter-resp','filter-tri-resp','filter-men-resp','filter-cope-resp','filter-sal-resp'].forEach(id => {
+  ['filter-resp','filter-tri-resp','filter-men-resp','filter-cope-resp','filter-sal-resp','filter-ind-resp'].forEach(id => {
     const el = document.getElementById(id); if (!el) return;
     allResponsaveis.forEach(r => { el.innerHTML += `<option value="${r.nome}">${r.nome}</option>`; });
   });
@@ -980,12 +1037,15 @@ async function loadIvaTri(){
       const submetido=r.envio&&r.envio!=='-';
       const pronto=!submetido&&r.saldo_estado==='pronto';
       const revisao=!submetido&&r.saldo_estado==='revisao';
-      // A lançar = sem envio, sem estado definido (inclui linhas com saldo mas sem estado)
       const alancar=!submetido&&!pronto&&!revisao;
       if(estadoFilterTri==='submetido'&&!submetido)return false;
       if(estadoFilterTri==='pronto'&&!pronto)return false;
       if(estadoFilterTri==='revisao'&&!revisao)return false;
       if(estadoFilterTri==='alancar'&&!alancar)return false;
+      if(estadoFilterTri==='reembolso'&&r.reembolso!=='sim')return false;
+      if(estadoFilterTri==='plano_iva'&&r.pedir_plano!=='sim'&&r.plano_executado!=='sim')return false;
+      if(estadoFilterTri==='com_recapit'&&(!r.recapitulativa||r.recapitulativa==='X'))return false;
+      if(estadoFilterTri==='sem_recapit'&&r.recapitulativa!=='X')return false;
     }
     return true;
   });
@@ -998,9 +1058,9 @@ async function loadIvaTri(){
   const fechoBg = TRI_FECHO_BG[trimestre];
 
   const thFixed = `
-    <th rowspan="2" style="min-width:70px;vertical-align:middle">Cód.</th>
-    <th rowspan="2" style="min-width:200px;vertical-align:middle">Cliente</th>
-    <th rowspan="2" style="min-width:100px;vertical-align:middle">Responsável</th>`;
+    <th rowspan="2" class="sticky-col sticky-col-1" style="min-width:70px;vertical-align:middle;background:#f1f0ec;border-right:1px solid ${C_BDR||'#BDD7EE'}">Cód.</th>
+    <th rowspan="2" class="sticky-col sticky-col-2" style="min-width:220px;vertical-align:middle;background:#f1f0ec">Cliente</th>
+    <th rowspan="2" class="sticky-col sticky-col-3" style="min-width:110px;vertical-align:middle;background:#f1f0ec">Responsável</th>`;
 
   const thMeses = meses.map((m,i)=>
     `<th colspan="4" style="background:${mesBg[i]};color:#fff;text-align:center;font-size:12px;font-weight:700;padding:7px 8px;border-left:2px solid rgba(255,255,255,.3)">${m}</th>`
@@ -1014,8 +1074,8 @@ async function loadIvaTri(){
     ).join('')
   ).join('');
 
-  const thSubFecho = ['Docs em Falta','Resp. Execução','Saldo IVA','Estado','Recapit.','Envio','Reembolso','Obs'].map((sub,i)=>
-    `<th style="min-width:${i===7?140:i===0||i===1?100:i===3||i===6?80:90}px;background:${i===6?'#7e22ce':fechoBg}cc;color:#fff;font-size:10px;font-weight:600;text-align:center;border-left:${i===0?'2px solid rgba(255,255,255,.3)':'none'}">${sub}</th>`
+  const thSubFecho = ['Docs em Falta','Resp. Execução','Saldo IVA','Pedir Plano','Plano Exec.','Estado','Recapit.','Envio','Reembolso','Obs'].map((sub,i)=>
+    `<th style="min-width:${i===9?140:i===0||i===1?100:i===3||i===4||i===5||i===8?80:90}px;background:${i===8?'#7e22ce':i===3?'#f59e0b':i===4?'#92400e':fechoBg}cc;color:#fff;font-size:10px;font-weight:600;text-align:center;border-left:${i===0?'2px solid rgba(255,255,255,.3)':'none'}">${sub}</th>`
   ).join('');
 
   document.getElementById('thead-iva-tri-wrap').innerHTML =
@@ -1052,9 +1112,9 @@ async function loadIvaTri(){
     ).join('');
 
     return `<tr style="background:${rowBg}">
-      <td style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600;padding:7px 10px">${c.codigo}</td>
-      <td style="font-weight:500;padding:7px 10px;white-space:nowrap">${c.nome}</td>
-      <td style="padding:7px 10px;color:#5c5a54">${c.responsavel||''}</td>
+      <td class="sticky-col sticky-col-1" style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600;padding:7px 10px;background:${rowBg};border-right:1px solid #e2e0d8">${c.codigo}</td>
+      <td class="sticky-col sticky-col-2" style="font-weight:500;padding:7px 10px;white-space:nowrap;background:${rowBg}">${c.nome}</td>
+      <td class="sticky-col sticky-col-3" style="padding:7px 10px;color:#5c5a54;background:${rowBg}">${c.responsavel||''}</td>
       ${mesCols}
       ${ec(c.id,'docs_em_falta',r.docs_em_falta,docsBg||rowBg,';border-left:2px solid rgba(0,0,0,.06)')}
       ${editable
@@ -1063,10 +1123,18 @@ async function loadIvaTri(){
       ${editable
         ?`<td style="background:${rowBg};text-align:right;font-weight:${saldo!=null?'600':'400'};padding:7px 10px;cursor:pointer" onclick="editIvaTri('${c.id}',${trimestre},'saldo_iva','${saldo||''}',this)">${saldoFmt}</td>`
         :`<td style="background:${rowBg};text-align:right;padding:7px 10px">${saldoFmt}</td>`}
+      <td style="background:${r.pedir_plano==='sim'?'#fef3c7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'pedir_plano','${c.id}',${trimestre},null,'${r.pedir_plano||''}','#fef3c7','<span style=\"color:#f59e0b;font-weight:700\">📋 Pedir</span>')">
+        ${r.pedir_plano==='sim'?'<span style="color:#f59e0b;font-weight:700">📋 Pedir</span>':'<span style="color:#d1d5db;font-size:11px">—</span>'}
+      </td>
+      <td style="background:${r.plano_executado==='sim'?'#dcfce7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'plano_executado','${c.id}',${trimestre},null,'${r.plano_executado||''}','#dcfce7','<span style=\"color:#15803d;font-weight:700\">✓ Exec.</span>')">
+        ${r.plano_executado==='sim'?'<span style="color:#15803d;font-weight:700">✓ Exec.</span>':'<span style="color:#d1d5db;font-size:11px">—</span>'}
+      </td>
       <td style="background:${r.saldo_estado==='pronto'?'#dcfce7':r.saldo_estado==='revisao'?'#fef9c3':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="editEstadoSaldo(this,'${c.id}',${trimestre},null,'${r.saldo_estado||''}')">
         ${r.saldo_estado==='pronto'?'<span style="color:#15803d;font-weight:600">✓ Pronto</span>':r.saldo_estado==='revisao'?'<span style="color:#b45309;font-weight:600">⚠ Revisão</span>':'<span style="color:#9ca3af;font-size:11px">— definir</span>'}
       </td>
-      ${ec(c.id,'recapitulativa',r.recapitulativa,rowBg)}
+      <td style="background:${r.recapitulativa==='X'?'#f1f5f9':r.recapitulativa?'#dcfce7':rowBg};text-align:center;cursor:pointer" onclick="editRecapit(this,'${c.id}',${trimestre},'${(String(r.recapitulativa||'')).replace(/'/g,\"\\'\")}')">
+        ${r.recapitulativa==='X'?'<span style="color:#64748b;font-weight:700">✕</span>':r.recapitulativa?'<span style="color:#15803d;font-size:11px">'+r.recapitulativa+'</span>':'<span style="color:#d1d5db;font-size:11px">—</span>'}
+      </td>
       ${editable
         ?`<td style="background:${envioBg||rowBg};text-align:center;font-weight:${r.envio&&r.envio!=='-'?'600':'400'}" onclick="editIvaTri('${c.id}',${trimestre},'envio','${r.envio||''}',this)">${r.envio||''}</td>`
         :`<td style="background:${envioBg||rowBg};text-align:center">${r.envio||''}</td>`}
@@ -1099,6 +1167,93 @@ function editRespExecucao(td, oldVal, onSave) {
   sel.onblur = done;
   sel.onchange = () => { sel.blur(); };
   sel.onkeydown = e => { if (e.key==='Escape') td.innerHTML = orig; };
+}
+
+// ── Recapitulativa — data ou X ───────────────────────────
+function editRecapit(td, clienteId, trimestre, current) {
+  if (td.querySelector('select')) return;
+  const sel = document.createElement('select');
+  sel.style.cssText = 'width:100%;padding:3px 4px;border:1px solid #93c5fd;border-radius:4px;font-size:11px;background:#eff6ff;outline:none;cursor:pointer';
+  sel.innerHTML = `
+    <option value="">— sem recapit. —</option>
+    <option value="X" ${current==='X'?'selected':''}>✕ Não tem</option>
+    <option value="data" ${current&&current!=='X'?'selected':''}>📅 Inserir data</option>
+  `;
+  td.innerHTML = ''; td.appendChild(sel); sel.focus();
+
+  sel.onchange = async () => {
+    const choice = sel.value;
+    if (choice === 'data') {
+      // Abrir date picker
+      td.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;align-items:center;gap:3px;width:100%';
+      const inp = document.createElement('input');
+      inp.type = 'date';
+      inp.style.cssText = 'flex:1;padding:2px 4px;border:1px solid #93c5fd;border-radius:4px;font-size:11px;background:#eff6ff;outline:none';
+      if (current && current !== 'X') {
+        const parts = current.replace(/-/g,'/').split('/');
+        if (parts.length===3 && parts[2].length===4)
+          inp.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+      }
+      wrap.appendChild(inp); td.appendChild(wrap); inp.focus();
+      inp.onblur = async () => {
+        if (inp.value) {
+          const d = new Date(inp.value+'T00:00:00');
+          const fmt = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+          await saveRecapit(clienteId, trimestre, fmt);
+          td.style.background = '#dcfce7';
+          td.innerHTML = `<span style="color:#15803d;font-size:11px">${fmt}</span>`;
+        } else {
+          td.innerHTML = '<span style="color:#d1d5db;font-size:11px">—</span>';
+          td.style.background = '';
+        }
+      };
+      inp.onkeydown = e => { if(e.key==='Enter'){e.preventDefault();inp.blur();} if(e.key==='Escape'){td.innerHTML='<span style="color:#d1d5db;font-size:11px">—</span>';} };
+    } else if (choice === 'X') {
+      await saveRecapit(clienteId, trimestre, 'X');
+      td.style.background = '#f1f5f9';
+      td.innerHTML = '<span style="color:#64748b;font-weight:700">✕</span>';
+    } else {
+      await saveRecapit(clienteId, trimestre, '');
+      td.style.background = '';
+      td.innerHTML = '<span style="color:#d1d5db;font-size:11px">—</span>';
+    }
+  };
+  sel.onblur = () => { if (td.querySelector('select')) td.innerHTML = current==='X'?'<span style="color:#64748b;font-weight:700">✕</span>':current?`<span style="color:#15803d;font-size:11px">${current}</span>`:'<span style="color:#d1d5db;font-size:11px">—</span>'; };
+}
+
+async function saveRecapit(clienteId, trimestre, val) {
+  const ex = await sb.from('iva_trimestral').select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('trimestre',trimestre).single();
+  let error;
+  if (ex.data) {
+    ({error} = await sb.from('iva_trimestral').update({recapitulativa:val||null,updated_by:currentUser.nome}).eq('id',ex.data.id));
+  } else {
+    ({error} = await sb.from('iva_trimestral').insert({cliente_id:clienteId,ano:2026,trimestre,recapitulativa:val||null,updated_by:currentUser.nome}));
+  }
+  if (!error) toast('Guardado'); else toast('Erro: '+error.message,'error');
+}
+
+// ── Toggle genérico para campos sim/null ─────────────────
+async function toggleCampo(td, field, clienteId, trimestre, mes, current, bgActive, labelActive) {
+  if (td.querySelector('select')) return;
+  const val = current === 'sim' ? null : 'sim';
+  const table = trimestre ? 'iva_trimestral' : 'iva_mensal';
+  const ex = trimestre
+    ? await sb.from(table).select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('trimestre',trimestre).single()
+    : await sb.from(table).select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('mes',mes).single();
+  let error;
+  if (ex.data) {
+    ({error} = await sb.from(table).update({[field]:val,updated_by:currentUser.nome}).eq('id',ex.data.id));
+  } else {
+    const filter = trimestre?{cliente_id:clienteId,ano:2026,trimestre}:{cliente_id:clienteId,ano:2026,mes};
+    ({error} = await sb.from(table).insert({...filter,[field]:val,updated_by:currentUser.nome}));
+  }
+  if (!error) {
+    td.style.background = val ? bgActive : '';
+    td.innerHTML = val ? labelActive : '<span style="color:#d1d5db;font-size:11px">—</span>';
+    toast(val ? 'Assinalado' : 'Removido');
+  } else toast('Erro: '+error.message,'error');
 }
 
 // ── Reembolso — dropdown para marcar/anular ──────────────
@@ -1213,7 +1368,7 @@ function cycleSaldo(td, clienteId, trimestre, mes, table) {
 async function editIvaTri(clienteId,trimestre,field,oldVal,td){
   const dateFields=['entrada_m1','bancos_m1','int_vendas_m1','lancamento_m1',
     'entrada_m2','bancos_m2','int_vendas_m2','lancamento_m2',
-    'entrada_m3','bancos_m3','int_vendas_m3','lancamento_m3','envio','recapitulativa'];
+    'entrada_m3','bancos_m3','int_vendas_m3','lancamento_m3','envio'];
   const editFn = dateFields.includes(field) ? editDateCell : editCell;
   editFn(td,oldVal,async(newVal)=>{
     const ex=await sb.from('iva_trimestral').select('id').eq('cliente_id',clienteId).eq('ano',2026).eq('trimestre',trimestre).single();
@@ -1255,6 +1410,8 @@ async function loadIvaMen(){
       if(estadoFilterMen==='pronto'&&!pronto)return false;
       if(estadoFilterMen==='revisao'&&!revisao)return false;
       if(estadoFilterMen==='alancar'&&!alancar)return false;
+      if(estadoFilterMen==='reembolso'&&r.reembolso!=='sim')return false;
+      if(estadoFilterMen==='plano_iva'&&r.pedir_plano!=='sim'&&r.plano_executado!=='sim')return false;
     }
     return true;
   });
@@ -1277,9 +1434,9 @@ async function loadIvaMen(){
     const rowBg = temDadosMen ? (rowIdx%2===0?'#fafaf9':'#fff') : (rowIdx%2===0?'#fff1f2':'#fff5f5');
     const cid=c.id;
     return `<tr>
-      <td style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600">${c.codigo}</td>
-      <td style="font-weight:500;white-space:nowrap">${c.nome}</td>
-      <td>${c.responsavel||''}</td>
+      <td class="sticky-col sticky-col-1" style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600;background:${rowBg};border-right:1px solid #e2e0d8">${c.codigo}</td>
+      <td class="sticky-col sticky-col-2" style="font-weight:500;white-space:nowrap;background:${rowBg}">${c.nome}</td>
+      <td class="sticky-col sticky-col-3" style="background:${rowBg}">${c.responsavel||''}</td>
       ${['entrada','bancos_acc','arquivo','int_vendas','lancamento'].map(f=>editable?`<td onclick="editIvaMen('${cid}',${mes},'${f}','${(r[f]||'').replace(/'/g,"\\'")}',this)">${r[f]||''}</td>`:`<td>${r[f]||''}</td>`).join('')}
       ${editable
         ?`<td style="cursor:pointer;text-align:center" onclick="editRespExecucao(this,'${r.resp_execucao||''}',async(v)=>{const ex=await sb.from('iva_mensal').select('id').eq('cliente_id','${cid}').eq('ano',2026).eq('mes',${mes}).single();let err;if(ex.data){({error:err}=await sb.from('iva_mensal').update({resp_execucao:v||null,updated_by:currentUser.nome}).eq('id',ex.data.id));}else{({error:err}=await sb.from('iva_mensal').insert({cliente_id:'${cid}',ano:2026,mes:${mes},resp_execucao:v||null,updated_by:currentUser.nome}));}if(!err){this.textContent=v;toast('Guardado');}else toast('Erro: '+err.message,'error');})">${r.resp_execucao||''}</td>`
@@ -1287,6 +1444,12 @@ async function loadIvaMen(){
       ${editable?`<td onclick="editIvaMen('${cid}',${mes},'sim_iva','${(r.sim_iva||'').replace(/'/g,"\\'")}',this)">${r.sim_iva||''}</td>`:`<td>${r.sim_iva||''}</td>`}
       ${editable?`<td style="background:${db}" onclick="editIvaMen('${cid}',${mes},'docs_em_falta','${r.docs_em_falta||''}',this)">${r.docs_em_falta||''}</td>`:`<td style="background:${db}">${r.docs_em_falta||''}</td>`}
       ${editable?`<td style="background:${sb_||rowBg};font-weight:500;cursor:pointer" onclick="editIvaMen('${cid}',${mes},'saldo_iva','${saldo||''}',this)">${sf}</td>`:`<td style="background:${sb_||rowBg};font-weight:500">${sf}</td>`}
+      <td style="background:${r.pedir_plano==='sim'?'#fef3c7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'pedir_plano','${cid}',null,${mes},'${r.pedir_plano||''}','#fef3c7','<span style=\\\"color:#f59e0b;font-weight:700\\\">📋 Pedir</span>')">
+        ${r.pedir_plano==='sim'?'<span style=\"color:#f59e0b;font-weight:700\">📋 Pedir</span>':'<span style=\"color:#d1d5db;font-size:11px\">—</span>'}
+      </td>
+      <td style="background:${r.plano_executado==='sim'?'#dcfce7':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="toggleCampo(this,'plano_executado','${cid}',null,${mes},'${r.plano_executado||''}','#dcfce7','<span style=\\\"color:#15803d;font-weight:700\\\">✓ Exec.</span>')">
+        ${r.plano_executado==='sim'?'<span style=\"color:#15803d;font-weight:700\">✓ Exec.</span>':'<span style=\"color:#d1d5db;font-size:11px\">—</span>'}
+      </td>
       <td style="background:${r.saldo_estado==='pronto'?'#dcfce7':r.saldo_estado==='revisao'?'#fef9c3':rowBg};text-align:center;padding:4px 6px;cursor:pointer" onclick="editEstadoSaldo(this,'${cid}',null,${mes},'${r.saldo_estado||''}')">
         ${r.saldo_estado==='pronto'?'<span style=\"color:#15803d;font-weight:600\">✓ Pronto</span>':r.saldo_estado==='revisao'?'<span style=\"color:#b45309;font-weight:600\">⚠ Revisão</span>':'<span style=\"color:#9ca3af;font-size:11px\">— definir</span>'}
       </td>
@@ -1409,6 +1572,59 @@ async function editSalario(clienteId,mes,field,oldVal,td){
   });
 }
 ['filter-sal-resp','filter-sal-mes'].forEach(id=>document.getElementById(id).addEventListener('change',loadSalarios));
+
+// ── INDEPENDENTES ────────────────────────────────────────
+async function loadIndependentes(){
+  const resp = document.getElementById('filter-ind-resp').value;
+  const trim = parseInt(document.getElementById('filter-ind-trim').value);
+  const TRI_LABELS = ['1T (Out/Nov/Dez 2025)','2T (Jan/Fev/Mar 2026)','3T (Abr/Mai/Jun 2026)','4T (Jul/Ago/Set 2026)'];
+  const TRI_COLORS = ['#ede9fe','#ddd6fe','#c4b5fd','#a78bfa'];
+
+  const{data:clis}=await sb.from('clientes').select('id,codigo,nome,responsavel')
+    .eq('tem_independente',true).eq('estado','Ativo').order('codigo');
+  const{data:regs}=await sb.from('independentes').select('*').eq('ano',2026).eq('trimestre',trim);
+  const regMap={};(regs||[]).forEach(r=>{regMap[r.cliente_id]=r;});
+
+  const filtrados=(clis||[]).filter(c=>!resp||c.responsavel===resp);
+  document.getElementById('count-ind').textContent=filtrados.length;
+
+  const tbody=document.getElementById('tbody-ind');
+  if(!filtrados.length){
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="empty-title">Nenhum cliente com Independentes activo</div></div></td></tr>`;
+    return;
+  }
+
+  const editable=can('canEditAnyCell');
+  const ec=(cid,f,v,bg='',isDate=false)=>editable
+    ?`<td style="background:${bg};text-align:center;cursor:pointer" onclick="${isDate?`editDateCell`:`editCell`}(this,'${(String(v||'')).replace(/'/g,"\'")}',async(nv)=>{const ex=await sb.from('independentes').select('id').eq('cliente_id','${cid}').eq('ano',2026).eq('trimestre',${trim}).single();let err;if(ex.data){({error:err}=await sb.from('independentes').update({${f}:nv||null,updated_by:currentUser.nome}).eq('id',ex.data.id));}else{({error:err}=await sb.from('independentes').insert({cliente_id:'${cid}',ano:2026,trimestre:${trim},${f}:nv||null,updated_by:currentUser.nome}));}if(!err){this.textContent=nv;toast('Guardado');}else toast('Erro: '+err.message,'error');})">${v||''}</td>`
+    :`<td style="background:${bg};text-align:center">${v||''}</td>`;
+
+  tbody.innerHTML=filtrados.map((c,rowIdx)=>{
+    const r=regMap[c.id]||{};
+    const rowBg=rowIdx%2===0?'#fafaf9':'#fff';
+    const envioBg=r.envio_declaracao?'#dcfce7':'';
+    const comBg=r.comunicacao_cliente?'#dcfce7':'';
+    return `<tr style="background:${rowBg}">
+      <td style="font-family:monospace;font-size:12px;color:#7c3aed;font-weight:600;padding:7px 10px">${c.codigo}</td>
+      <td style="font-weight:500;padding:7px 10px;white-space:nowrap">${c.nome}</td>
+      <td style="padding:7px 10px;color:#5c5a54">${c.responsavel||''}</td>
+      ${ec(c.id,'opcao_ss',r.opcao_ss,'#ede9fe')}
+      ${ec(c.id,'valor_pagar_anual',r.valor_pagar_anual,'#f5f3ff')}
+      ${ec(c.id,'val_declarado',r.val_declarado,rowBg)}
+      ${ec(c.id,'val_pagar_trim',r.val_pagar_trim,rowBg)}
+      ${ec(c.id,'envio_declaracao',r.envio_declaracao,envioBg||rowBg,true)}
+      ${ec(c.id,'comunicacao_cliente',r.comunicacao_cliente,comBg||rowBg,true)}
+      ${editable
+        ?`<td style="padding:7px 10px;color:#5c5a54;cursor:pointer" onclick="editCell(this,'${(String(r.obs||'')).replace(/'/g,"\'")}',async(nv)=>{const ex=await sb.from('independentes').select('id').eq('cliente_id','${c.id}').eq('ano',2026).eq('trimestre',${trim}).single();let err;if(ex.data){({error:err}=await sb.from('independentes').update({obs:nv||null,updated_by:currentUser.nome}).eq('id',ex.data.id));}else{({error:err}=await sb.from('independentes').insert({cliente_id:'${c.id}',ano:2026,trimestre:${trim},obs:nv||null,updated_by:currentUser.nome}));}if(!err){this.textContent=nv;toast('Guardado');}else toast('Erro: '+err.message,'error');})">${r.obs||''}</td>`
+        :`<td style="padding:7px 10px;color:#5c5a54">${r.obs||''}</td>`}
+    </tr>`;
+  }).join('');
+}
+
+['filter-ind-resp','filter-ind-trim'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('change',loadIndependentes);
+});
 
 // ── RESUMO ─────────────────────────────────────────────
 async function loadResumo(){
@@ -1675,6 +1891,7 @@ document.querySelectorAll('.nav-tab').forEach(tab=>{
     if(page==='iva-men')await loadIvaMen();
     if(page==='cope')await loadCope();
     if(page==='salarios')await loadSalarios();
+    if(page==='independentes')await loadIndependentes();
     if(page==='resumo')await loadResumo();
     if(page==='responsaveis')await loadResponsaveis();
   });
