@@ -85,6 +85,19 @@ select.filter:focus{border-color:#93c5fd}
 
 /* ── TABLE ── */
 .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow)}
+/* Colunas fixas */
+.sticky-col{position:sticky;z-index:3;background:inherit}
+.sticky-col-1{left:0;min-width:70px}
+.sticky-col-2{left:70px;min-width:220px}
+.sticky-col-3{left:290px;min-width:110px}
+/* Sombra na última coluna fixa */
+.sticky-col-3::after{content:'';position:absolute;right:-6px;top:0;bottom:0;width:6px;background:linear-gradient(to right,rgba(0,0,0,.08),transparent);pointer-events:none}
+/* Cabeçalhos sticky no topo */
+thead th{position:sticky;z-index:2}
+thead tr:first-child th{top:0;z-index:4}
+thead tr:nth-child(2) th{top:33px;z-index:3}
+/* Cabeçalhos fixos das colunas fixas */
+thead th.sticky-col{z-index:5!important}
 table{width:100%;border-collapse:collapse}
 thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
 th{padding:8px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;cursor:pointer;user-select:none}
@@ -254,6 +267,7 @@ tbody tr:hover{background:#fafaf9}
       <option value="tem_iva_mensal">IVA Mensal</option>
       <option value="tem_salarios">Salários</option>
       <option value="tem_retencoes">Retenções</option>
+      <option value="tem_modelo30">Modelo 30</option>
       <option value="tem_independente">Independentes</option>
     </select>
     <button class="btn btn-primary" id="btn-novo-cliente" onclick="openModal()" style="display:none">+ Novo cliente</button>
@@ -299,7 +313,7 @@ tbody tr:hover{background:#fafaf9}
       <button class="btn-estado" data-val="sem_recapit" onclick="setEstadoFilter('tri','sem_recapit')" style="background:#f1f5f9;color:#64748b;border-color:#cbd5e1">✕ Sem Recapit.</button>
     </div>
   </div>
-  <div class="table-wrap" style="overflow-x:auto">
+  <div class="table-wrap" style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 160px)">
     <table id="table-iva-tri"><thead id="thead-iva-tri-wrap"></thead>
     <tbody id="tbody-iva-tri"><tr><td colspan="21"><div class="loading"><div class="spinner"></div></div></td></tr></tbody>
     </table>
@@ -333,8 +347,9 @@ tbody tr:hover{background:#fafaf9}
   </div>
   <div class="table-wrap" style="overflow-x:auto">
     <table><thead><tr>
-      <th style="min-width:70px">Cód.</th><th style="min-width:220px">Cliente</th>
-      <th style="min-width:100px">Responsável</th>
+      <th class="sticky-col sticky-col-1" style="min-width:70px;background:#f1f0ec;border-right:1px solid #e2e0d8">Cód.</th>
+      <th class="sticky-col sticky-col-2" style="min-width:220px;background:#f1f0ec">Cliente</th>
+      <th class="sticky-col sticky-col-3" style="min-width:110px;background:#f1f0ec">Responsável</th>
       <th style="min-width:80px">Entrada</th><th style="min-width:80px">Bancos ACC</th>
       <th style="min-width:80px">Arquivo</th><th style="min-width:80px">Int.Vendas</th>
       <th style="min-width:80px">Lançamento</th><th style="min-width:100px">Resp. Execução</th>
@@ -362,8 +377,9 @@ tbody tr:hover{background:#fafaf9}
   </div>
   <div class="table-wrap" style="overflow-x:auto">
     <table><thead><tr>
-      <th style="min-width:70px">Cód.</th><th style="min-width:220px">Cliente</th>
-      <th style="min-width:100px">Responsável</th>
+      <th class="sticky-col sticky-col-1" style="min-width:70px;background:#f1f0ec;border-right:1px solid #e2e0d8">Cód.</th>
+      <th class="sticky-col sticky-col-2" style="min-width:220px;background:#f1f0ec">Cliente</th>
+      <th class="sticky-col sticky-col-3" style="min-width:110px;background:#f1f0ec">Responsável</th>
       <th style="min-width:75px;background:#dbeafe">Jan</th><th style="min-width:75px;background:#dbeafe">Fev</th>
       <th style="min-width:75px;background:#bfdbfe">Mar</th><th style="min-width:75px;background:#bfdbfe">Abr</th>
       <th style="min-width:75px;background:#93c5fd">Mai</th><th style="min-width:75px;background:#93c5fd">Jun</th>
@@ -392,8 +408,9 @@ tbody tr:hover{background:#fafaf9}
   </div>
   <div class="table-wrap" style="overflow-x:auto">
     <table><thead><tr>
-      <th style="min-width:70px">Cód.</th><th style="min-width:220px">Cliente</th>
-      <th style="min-width:100px">Responsável</th>
+      <th class="sticky-col sticky-col-1" style="min-width:70px;background:#f1f0ec;border-right:1px solid #e2e0d8">Cód.</th>
+      <th class="sticky-col sticky-col-2" style="min-width:220px;background:#f1f0ec">Cliente</th>
+      <th class="sticky-col sticky-col-3" style="min-width:110px;background:#f1f0ec">Responsável</th>
       <th style="min-width:100px">Obs Mensal</th>
       <th style="min-width:90px;background:#f0fdf4">Recibos</th>
       <th style="min-width:90px;background:#f0fdf4">Env. Recibos</th>
@@ -593,7 +610,7 @@ const SERVICOS = [
   {key:'tem_cope',label:'COPE'},{key:'tem_iva_trimestral',label:'IVA Trimestral'},
   {key:'tem_iva_mensal',label:'IVA Mensal'},{key:'tem_saft',label:'SAFT'},
   {key:'tem_salarios',label:'Salários/DMR'},{key:'tem_retencoes',label:'Retenções'},
-  {key:'tem_fecho',label:'Fecho Anual'},{key:'tem_independente',label:'Independentes'},
+  {key:'tem_fecho',label:'Fecho Anual'},{key:'tem_modelo30',label:'Modelo 30'},{key:'tem_independente',label:'Independentes'},
 ];
 const MESES_FULL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -709,17 +726,31 @@ const FALLBACK_USERS = [
 
 async function initLogin() {
   const sel = document.getElementById('sel-responsavel');
+  // Limpar opções anteriores
+  sel.innerHTML = '<option value="">— Seleccionar —</option>';
+  
+  // Tentar carregar do Supabase
   try {
     const {data, error} = await sb.from('responsaveis').select('*').eq('estado','Ativo').order('nome');
-    if (error || !data || data.length === 0) throw new Error('sem dados');
-    allResponsaveis = data;
+    if (!error && data && data.length > 0) {
+      allResponsaveis = data;
+    } else {
+      throw new Error('sem dados');
+    }
   } catch(e) {
     console.warn('Supabase indisponível, a usar lista local:', e.message);
     allResponsaveis = FALLBACK_USERS;
   }
+  
+  // Sempre popular o dropdown
   allResponsaveis.forEach(r => {
-    sel.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = r.nome;
+    sel.appendChild(opt);
   });
+  
+  console.log('Login carregado:', allResponsaveis.length, 'responsáveis');
 }
 
 function goToPin() {
@@ -964,12 +995,16 @@ async function saveCliente(){
   const payload={codigo,nome,
     responsavel:document.getElementById('f-responsavel').value||null,
     estado:document.getElementById('f-estado').value,
-    obs:document.getElementById('f-obs').value.trim()||null};
+    obs:document.getElementById('f-obs').value.trim()||null,
+    tem_iuc:false  // campo removido da UI, forçar false
+  };
   SERVICOS.forEach(s=>{payload[s.key]=document.getElementById('si-'+s.key).classList.contains('active');});
+  
+  console.log('Saving cliente payload:', payload);
   let error;
   if(editingId){({error}=await sb.from('clientes').update(payload).eq('id',editingId));}
   else{({error}=await sb.from('clientes').insert(payload));}
-  if(error){toast('Erro: '+error.message,'error');return;}
+  if(error){toast('Erro ao guardar: '+error.message,'error');console.error('Save error:',error);return;}
   toast(editingId?'Cliente actualizado':'Cliente criado');
   closeModal(); await loadClientes();
 }
@@ -1042,9 +1077,9 @@ async function loadIvaTri(){
   const fechoBg = TRI_FECHO_BG[trimestre];
 
   const thFixed = `
-    <th rowspan="2" style="min-width:70px;vertical-align:middle">Cód.</th>
-    <th rowspan="2" style="min-width:200px;vertical-align:middle">Cliente</th>
-    <th rowspan="2" style="min-width:100px;vertical-align:middle">Responsável</th>`;
+    <th rowspan="2" class="sticky-col sticky-col-1" style="min-width:70px;vertical-align:middle;background:#f1f0ec;border-right:1px solid ${C_BDR||'#BDD7EE'}">Cód.</th>
+    <th rowspan="2" class="sticky-col sticky-col-2" style="min-width:220px;vertical-align:middle;background:#f1f0ec">Cliente</th>
+    <th rowspan="2" class="sticky-col sticky-col-3" style="min-width:110px;vertical-align:middle;background:#f1f0ec">Responsável</th>`;
 
   const thMeses = meses.map((m,i)=>
     `<th colspan="4" style="background:${mesBg[i]};color:#fff;text-align:center;font-size:12px;font-weight:700;padding:7px 8px;border-left:2px solid rgba(255,255,255,.3)">${m}</th>`
@@ -1096,9 +1131,9 @@ async function loadIvaTri(){
     ).join('');
 
     return `<tr style="background:${rowBg}">
-      <td style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600;padding:7px 10px">${c.codigo}</td>
-      <td style="font-weight:500;padding:7px 10px;white-space:nowrap">${c.nome}</td>
-      <td style="padding:7px 10px;color:#5c5a54">${c.responsavel||''}</td>
+      <td class="sticky-col sticky-col-1" style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600;padding:7px 10px;background:${rowBg};border-right:1px solid #e2e0d8">${c.codigo}</td>
+      <td class="sticky-col sticky-col-2" style="font-weight:500;padding:7px 10px;white-space:nowrap;background:${rowBg}">${c.nome}</td>
+      <td class="sticky-col sticky-col-3" style="padding:7px 10px;color:#5c5a54;background:${rowBg}">${c.responsavel||''}</td>
       ${mesCols}
       ${ec(c.id,'docs_em_falta',r.docs_em_falta,docsBg||rowBg,';border-left:2px solid rgba(0,0,0,.06)')}
       ${editable
@@ -1418,9 +1453,9 @@ async function loadIvaMen(){
     const rowBg = temDadosMen ? (rowIdx%2===0?'#fafaf9':'#fff') : (rowIdx%2===0?'#fff1f2':'#fff5f5');
     const cid=c.id;
     return `<tr>
-      <td style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600">${c.codigo}</td>
-      <td style="font-weight:500;white-space:nowrap">${c.nome}</td>
-      <td>${c.responsavel||''}</td>
+      <td class="sticky-col sticky-col-1" style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600;background:${rowBg};border-right:1px solid #e2e0d8">${c.codigo}</td>
+      <td class="sticky-col sticky-col-2" style="font-weight:500;white-space:nowrap;background:${rowBg}">${c.nome}</td>
+      <td class="sticky-col sticky-col-3" style="background:${rowBg}">${c.responsavel||''}</td>
       ${['entrada','bancos_acc','arquivo','int_vendas','lancamento'].map(f=>editable?`<td onclick="editIvaMen('${cid}',${mes},'${f}','${(r[f]||'').replace(/'/g,"\\'")}',this)">${r[f]||''}</td>`:`<td>${r[f]||''}</td>`).join('')}
       ${editable
         ?`<td style="cursor:pointer;text-align:center" onclick="editRespExecucao(this,'${r.resp_execucao||''}',async(v)=>{const ex=await sb.from('iva_mensal').select('id').eq('cliente_id','${cid}').eq('ano',2026).eq('mes',${mes}).single();let err;if(ex.data){({error:err}=await sb.from('iva_mensal').update({resp_execucao:v||null,updated_by:currentUser.nome}).eq('id',ex.data.id));}else{({error:err}=await sb.from('iva_mensal').insert({cliente_id:'${cid}',ano:2026,mes:${mes},resp_execucao:v||null,updated_by:currentUser.nome}));}if(!err){this.textContent=v;toast('Guardado');}else toast('Erro: '+err.message,'error');})">${r.resp_execucao||''}</td>`
