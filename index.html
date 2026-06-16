@@ -460,7 +460,7 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <span class="nuser" id="nuser"></span>
     <span class="nbadge" id="nbadge"></span>
     <button class="nsair" onclick="logout()">Sair</button>
-    <span id="build-badge" class="build-badge">BUILD BETA FECHO-FIX + SERVIÇOS EM MASSA POR COLUNA 2026-06-16</span>
+    <span id="build-badge" class="build-badge">BUILD FECHO ANUAL ROBUSTO BETA FECHO-FIX + SERVIÇOS EM MASSA POR COLUNA 2026-06-16</span>
   </div>
 </nav>
 
@@ -3013,41 +3013,68 @@ async function delResp(){
 let fechoLoadSeq=0;
 async function loadFechoAnual(){
   const loadSeq=++fechoLoadSeq;
+  const tb=document.getElementById('tb-fecho');
   const resp=String(document.getElementById('fil-fecho-resp')?.value||'').trim();
   const estado=String(document.getElementById('fil-fecho-estado')?.value||'').trim();
   const q=(document.getElementById('src-fecho')?.value||'').trim().toLowerCase();
-  const [{data:cl,error:ce},{data:rg,error:re}]=await Promise.all([
-    sb.from('clientes').select('id,codigo,nome,responsavel').eq('tem_fecho',true).eq('estado','Ativo').order('codigo'),
-    sb.from('fecho_anual').select('*').eq('ano',ANO)
-  ]);
+  if(tb) tb.innerHTML='<tr><td colspan="7"><div class="loading"><div class="spin"></div></div></td></tr>';
+
+  const {data:cl,error:ce}=await sb.from('clientes')
+    .select('id,codigo,nome,responsavel')
+    .eq('tem_fecho',true)
+    .eq('estado','Ativo')
+    .order('codigo');
+
   if(loadSeq!==fechoLoadSeq)return;
-  if(ce||re){toast('Erro Fecho Anual: '+(ce?.message||re?.message),'err');return;}
-  const map={};(rg||[]).forEach(r=>map[r.cliente_id]=r);
-  const data=(cl||[]).filter(c=>{
+  if(ce){
+    if(tb)tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-t">Erro ao carregar clientes</div><div class="empty-s">${escHtml(ce.message)}</div></div></td></tr>`;
+    toast('Erro Fecho Anual: '+ce.message,'err');
+    return;
+  }
+
+  let rg=[];
+  const {data:registos,error:re}=await sb.from('fecho_anual').select('*').eq('ano',ANO);
+  if(loadSeq!==fechoLoadSeq)return;
+  if(re){
+    console.error('Fecho Anual:',re);
+    toast('Fecho Anual sem registos: '+re.message,'err');
+  } else rg=registos||[];
+
+  const map={};rg.forEach(r=>map[r.cliente_id]=r);
+  const allClients=cl||[];
+  const data=allClients.filter(c=>{
     const r=map[c.id]||{};
     if(resp&&c.responsavel!==resp)return false;
     if(estado&&(r.estado||'por_iniciar')!==estado)return false;
     if(q&&!String(c.codigo||'').toLowerCase().includes(q)&&!String(c.nome||'').toLowerCase().includes(q))return false;
     return true;
   });
+
   document.getElementById('cnt-fecho').textContent=data.length;
   const respSel=document.getElementById('fil-fecho-resp');
-  if(respSel){const cur=respSel.value;const nomes=[...new Set((cl||[]).map(c=>c.responsavel).filter(Boolean))].sort();respSel.innerHTML='<option value="">Todos os responsáveis</option>'+nomes.map(n=>`<option value="${n}">${n}</option>`).join('');respSel.value=cur;}
-  const tb=document.getElementById('tb-fecho');
+  if(respSel){
+    const cur=respSel.value;
+    const nomes=[...new Set(allClients.map(c=>c.responsavel).filter(Boolean))].sort();
+    respSel.innerHTML='<option value="">Todos os responsáveis</option>'+nomes.map(n=>`<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+    respSel.value=cur;
+  }
+  if(!tb)return;
   if(!data.length){tb.innerHTML='<tr><td colspan="7"><div class="empty"><div class="empty-t">Sem clientes para os filtros selecionados</div></div></td></tr>';return;}
+
   const edit=!isFiscalYearClosed();
   tb.innerHTML=data.map((c,i)=>{
-    const r=map[c.id]||{};const st=r.estado||'por_iniciar';
+    const r=map[c.id]||{};
+    const st=r.estado||'por_iniciar';
     const stLabel=st==='fechado'?'Fechado':st==='em_curso'?'Em curso':'Por iniciar';
     const stBg=st==='fechado'?'#dcfce7':st==='em_curso'?'#fef3c7':'#fee2e2';
     return `<tr>
-      <td class="sc sc1" style="background:${rowBg(i)};font-family:monospace;color:#1d4ed8;font-weight:600">${c.codigo||''}</td>
-      <td class="sc sc2" style="background:${rowBg(i)};font-weight:600">${c.nome||''}</td>
-      <td class="sc sc3" style="background:${rowBg(i)}">${c.responsavel||''}</td>
-      <td ${edit?`onclick="editFechoResp(this,'${c.id}','${r.resp_execucao||''}')"`:''} style="cursor:${edit?'pointer':'default'}">${r.resp_execucao||''}</td>
+      <td class="sc sc1" style="background:${rowBg(i)};font-family:monospace;color:#1d4ed8;font-weight:600">${escHtml(c.codigo||'')}</td>
+      <td class="sc sc2" style="background:${rowBg(i)};font-weight:600">${escHtml(c.nome||'')}</td>
+      <td class="sc sc3" style="background:${rowBg(i)}">${escHtml(c.responsavel||'')}</td>
+      <td ${edit?`onclick="editFechoResp(this,'${c.id}','${String(r.resp_execucao||'').replace(/'/g,'&#39;')}')"`:''} style="cursor:${edit?'pointer':'default'}">${escHtml(r.resp_execucao||'')}</td>
       <td ${edit?`onclick="editFechoEstado(this,'${c.id}','${st}')"`:''} style="background:${stBg};text-align:center;font-weight:700;cursor:${edit?'pointer':'default'}">${stLabel}</td>
-      <td ${edit?`onclick="editFechoDate(this,'${c.id}','${r.data_fecho||''}')"`:''} style="text-align:center;cursor:${edit?'pointer':'default'}">${r.data_fecho||''}</td>
-      <td ${edit?`onclick="editFechoObs(this,'${c.id}','${String(r.obs||'').replace(/'/g,'&#39;')}' )"`:''} style="cursor:${edit?'pointer':'default'}">${r.obs||''}</td>
+      <td ${edit?`onclick="editFechoDate(this,'${c.id}','${String(r.data_fecho||'').replace(/'/g,'&#39;')}')"`:''} style="text-align:center;cursor:${edit?'pointer':'default'}">${escHtml(r.data_fecho||'')}</td>
+      <td ${edit?`onclick="editFechoObs(this,'${c.id}','${String(r.obs||'').replace(/'/g,'&#39;')}' )"`:''} style="cursor:${edit?'pointer':'default'}">${escHtml(r.obs||'')}</td>
     </tr>`;
   }).join('');
 }
