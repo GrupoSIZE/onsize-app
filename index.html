@@ -460,7 +460,7 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <span class="nuser" id="nuser"></span>
     <span class="nbadge" id="nbadge"></span>
     <button class="nsair" onclick="logout()">Sair</button>
-    <span id="build-badge" class="build-badge">BUILD BETA + SERVIÇOS EM MASSA POR COLUNA 2026-06-16</span>
+    <span id="build-badge" class="build-badge">BUILD BETA FECHO-FIX + SERVIÇOS EM MASSA POR COLUNA 2026-06-16</span>
   </div>
 </nav>
 
@@ -3010,14 +3010,17 @@ async function delResp(){
 // ══════════════════════════════════════════════════════════
 // FECHO ANUAL
 // ══════════════════════════════════════════════════════════
+let fechoLoadSeq=0;
 async function loadFechoAnual(){
-  const resp=document.getElementById('fil-fecho-resp')?.value||'';
-  const estado=document.getElementById('fil-fecho-estado')?.value||'';
+  const loadSeq=++fechoLoadSeq;
+  const resp=String(document.getElementById('fil-fecho-resp')?.value||'').trim();
+  const estado=String(document.getElementById('fil-fecho-estado')?.value||'').trim();
   const q=(document.getElementById('src-fecho')?.value||'').trim().toLowerCase();
   const [{data:cl,error:ce},{data:rg,error:re}]=await Promise.all([
     sb.from('clientes').select('id,codigo,nome,responsavel').eq('tem_fecho',true).eq('estado','Ativo').order('codigo'),
     sb.from('fecho_anual').select('*').eq('ano',ANO)
   ]);
+  if(loadSeq!==fechoLoadSeq)return;
   if(ce||re){toast('Erro Fecho Anual: '+(ce?.message||re?.message),'err');return;}
   const map={};(rg||[]).forEach(r=>map[r.cliente_id]=r);
   const data=(cl||[]).filter(c=>{
@@ -3049,7 +3052,7 @@ async function loadFechoAnual(){
   }).join('');
 }
 async function saveFecho(cid,data){await upsert('fecho_anual',{cliente_id:cid,ano:ANO},data);toast('Guardado');await loadFechoAnual();}
-function editFechoResp(td,cid,val){const opts=opcoesResponsavelExecucao();const inicial=podeEscolherQualquerResponsavel()?val:(user?.nome||'');editSel(td,inicial,opts,async nv=>saveFecho(cid,{resp_execucao:responsavelExecucaoPermitido(nv)||null}));}
+function editFechoResp(td,cid,val){const opts=responsavelOptions();editSel(td,val,opts,async nv=>saveFecho(cid,{resp_execucao:nv||null}));}
 function editFechoEstado(td,cid,val){editSel(td,val,[{v:'por_iniciar',l:'Por iniciar'},{v:'em_curso',l:'Em curso'},{v:'fechado',l:'Fechado'}],async nv=>saveFecho(cid,{estado:nv||'por_iniciar'}));}
 function editFechoDate(td,cid,val){editDate(td,val,async nv=>saveFecho(cid,{data_fecho:nv||null}));}
 function editFechoObs(td,cid,val){editTxt(td,val,async nv=>saveFecho(cid,{obs:nv||null}));}
