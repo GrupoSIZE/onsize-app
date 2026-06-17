@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Grupo SIZE — Controlo Interno V2</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="login" class="login-screen">
+  <div class="login-card">
+    <div class="brand-mark">SIZE</div>
+    <h1>Controlo Interno V2</h1>
+    <label>Utilizador</label>
+    <select id="login-user"></select>
+    <label>PIN</label>
+    <input id="login-pin" type="password" inputmode="numeric" maxlength="8" placeholder="Introduza o PIN">
+    <button id="login-btn" class="primary">Entrar</button>
+    <p id="login-error" class="error-text"></p>
+  </div>
+</div>
+
+<aside id="sidebar" class="sidebar hidden">
+  <div class="brand">Consultoria de Gestão</div>
+  <div class="year-card">
+    <span>Ano de trabalho</span>
+    <select id="year-select"></select>
+    <button id="open-year-btn" class="ghost admin-only">Abrir novo ano</button>
+    <button id="close-year-btn" class="danger admin-only">Fechar ano</button>
+  </div>
+  <nav id="menu"></nav>
+  <div class="session">
+    <strong id="session-name"></strong>
+    <button id="logout-btn" class="ghost">Sair</button>
+  </div>
+</aside>
+
+<main id="app" class="app hidden">
+  <header class="topbar">
+    <div>
+      <h2 id="page-title">Resumo</h2>
+      <small id="page-subtitle">V2 limpa e modular</small>
+    </div>
+    <div class="build">BETA V2 — 2026</div>
+  </header>
+  <section id="content"></section>
+</main>
+
+<div id="toast"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
