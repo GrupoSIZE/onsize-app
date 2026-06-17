@@ -423,7 +423,6 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <div class="nav-group">
       <div class="nav-group-title">Base</div>
       <a class="ntab on" data-p="clientes">Clientes</a>
-      <a class="ntab hide" data-p="servicos-massa" id="tab-servicos-massa">Gestão de Serviços</a>
       <a class="ntab hide" data-p="responsaveis" id="tab-resp">Responsáveis</a>
     </div>
     <div class="nav-group">
@@ -460,51 +459,20 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <span class="nuser" id="nuser"></span>
     <span class="nbadge" id="nbadge"></span>
     <button class="nsair" onclick="logout()">Sair</button>
-    <span id="build-badge" class="build-badge">BUILD FECHO ANUAL ROBUSTO BETA FECHO-FIX + SERVIÇOS EM MASSA POR COLUNA 2026-06-16</span>
+    <span id="build-badge" class="build-badge">BUILD CLIENTES UNIFICADO + FECHO ANUAL REPARADO 2026-06-17</span>
   </div>
 </nav>
 
-<!-- CLIENTES -->
+<!-- CLIENTES — GESTÃO DE SERVIÇOS -->
 <div class="page on" id="page-clientes">
   <div class="tb">
-    <span class="tb-title">Clientes</span><span class="tb-count" id="cnt-cli">—</span>
-    <div class="srch"><span class="si">🔍</span><input id="src-cli" placeholder="Pesquisar..."></div>
-    <select class="fil" id="fil-cli-resp"><option value="">Todos os responsáveis</option></select>
-    <select class="fil" id="fil-cli-est">
-      <option value="">Todos os estados</option>
-      <option value="Ativo">Ativo</option><option value="Cessado">Cessado</option>
-      <option value="Insolvente">Insolvente</option><option value="Suspenso">Suspenso</option>
-    </select>
-    <select class="fil" id="fil-cli-svc">
-      <option value="">Todos os serviços</option>
-      <option value="tem_cope">COPE</option><option value="tem_iva_trimestral">IVA Trimestral</option>
-      <option value="tem_iva_mensal">IVA Mensal</option><option value="tem_saft">SAFT</option>
-      <option value="tem_salarios">Salários</option><option value="tem_retencoes">Retenções</option>
-      <option value="tem_modelo30">Modelo 30</option><option value="tem_independente">Independentes</option>
-    </select>
-    <button class="btn btn-p hide" id="btn-novo-cli" onclick="openCli()">+ Novo cliente</button>
-  </div>
-  <div class="twrap">
-    <table id="tbl-cli">
-      <thead><tr>
-        <th data-col="codigo">Cód.</th><th data-col="nome">Cliente</th>
-        <th data-col="responsavel">Responsável</th><th>Estado</th>
-        <th>Serviços</th><th>Obs</th><th style="width:60px"></th>
-      </tr></thead>
-      <tbody id="tb-cli"><tr><td colspan="7"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- TESTE: GESTÃO DE SERVIÇOS EM MASSA -->
-<div class="page" id="page-servicos-massa">
-  <div class="tb">
-    <span class="tb-title">Gestão de Serviços por Cliente</span><span class="tb-count" id="cnt-svc-massa">—</span>
+    <span class="tb-title">Clientes</span><span class="tb-count" id="cnt-svc-massa">—</span>
     <div class="srch"><span class="si">🔍</span><input id="src-svc-massa" placeholder="Pesquisar código ou cliente..."></div>
     <select class="fil" id="fil-svc-massa-resp"><option value="">Todos os responsáveis</option></select>
     <select class="fil" id="fil-svc-massa-est"><option value="Ativo">Clientes ativos</option><option value="">Todos os estados</option><option value="Cessado">Cessados</option><option value="Suspenso">Suspensos</option></select>
+    <button class="btn btn-p hide" id="btn-novo-cli" onclick="openCli()">+ Novo cliente</button>
   </div>
-  <div class="bulkbar">
+  <div class="bulkbar" id="svc-bulkbar">
     <label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" id="svc-select-all" onchange="toggleAllSvcRows(this.checked)"> Selecionar todos os resultados</label>
     <span class="bulk-info" id="svc-selected-info">0 selecionados</span>
     <select id="svc-bulk-service"><option value="">Escolher serviço...</option></select>
@@ -1436,7 +1404,6 @@ function loginOk() {
   if (can('verResp')) document.getElementById('tab-resp').classList.remove('hide');
   if (can('verAuditoria')) document.getElementById('tab-audit').classList.remove('hide');
   if (can('criar')) document.getElementById('btn-novo-cli').classList.remove('hide');
-  if (can('editarClientes')) document.getElementById('tab-servicos-massa')?.classList.remove('hide');
   const yearBtn=document.getElementById('btn-open-year'); if(yearBtn){ const admin=isAdminUser(); yearBtn.classList.toggle('hide',!admin); yearBtn.style.display=admin?'block':'none'; }
   const closeBtn=document.getElementById('btn-close-year'); if(closeBtn){ const admin=isAdminUser(); closeBtn.classList.toggle('hide',!admin); closeBtn.style.display=admin?'block':'none'; }
   initApp();
@@ -1507,7 +1474,7 @@ async function changeWorkYear(v){
 async function reloadCurrentPage(){
   const tab=document.querySelector('.ntab.on');
   const p=tab?.dataset?.p||'clientes';
-  if(p==='clientes')return loadClis();
+  if(p==='clientes'){await loadClis();return loadServiceMatrix();}
   if(p==='iva-cessadas')return loadIvaCessadas();
   if(p==='iva-tri')return loadIvaTri();
   if(p==='iva-men')return loadIvaMen();
@@ -1594,11 +1561,12 @@ async function initApp() {
   const es = document.getElementById('fil-sal-mes'); if(es) es.value = m;
   const et = document.getElementById('fil-tri-trim'); if(et) et.value = t;
   await loadClis();
+  await loadServiceMatrix();
 }
 
 
 // ══════════════════════════════════════════════════════════
-// TESTE — GESTÃO DE SERVIÇOS EM MASSA
+// CLIENTES — GESTÃO DE SERVIÇOS
 // ══════════════════════════════════════════════════════════
 let svcOriginal = new Map();
 let svcDraft = new Map();
@@ -1619,7 +1587,8 @@ function svcFilteredClients(){
   }).sort((a,b)=>String(a.codigo||'').localeCompare(String(b.codigo||'')));
 }
 async function loadServiceMatrix(){
-  if(!can('editarClientes')){toast('Sem permissão para gerir serviços','err');return;}
+  const canEdit=can('editarClientes');
+  const bulkbar=document.getElementById('svc-bulkbar'); if(bulkbar) bulkbar.style.display=canEdit?'flex':'none';
   if(!clis.length) await loadClis();
   svcOriginal=new Map(); svcDraft=new Map(); svcSelected=new Set();
   clis.forEach(c=>{const f=svcClientFlags(c);svcOriginal.set(c.id,{...f});svcDraft.set(c.id,{...f});});
@@ -1640,12 +1609,13 @@ function renderServiceMatrix(){
   const data=svcFilteredClients();
   document.getElementById('cnt-svc-massa').textContent=data.length+' clientes';
   const head=document.getElementById('svc-matrix-head');
-  head.innerHTML='<th class="sticky-cb"><input type="checkbox" id="svc-page-check" onchange="toggleVisibleSvcRows(this.checked)"></th><th class="sticky-code">Cód.</th><th class="sticky-name">Cliente</th><th class="sticky-resp">Responsável</th>'+SVCS.map(s=>`<th><label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="svc-col-${s.k}" onchange="toggleSvcColumn('${s.k}',this.checked)"><span>${s.l}</span></label></th>`).join('');
+  const canEdit=can('editarClientes');
+  head.innerHTML='<th class="sticky-cb">'+(canEdit?'<input type="checkbox" id="svc-page-check" onchange="toggleVisibleSvcRows(this.checked)">':'')+'</th><th class="sticky-code">Cód.</th><th class="sticky-name">Cliente</th><th class="sticky-resp">Responsável</th>'+SVCS.map(s=>`<th><label style="display:flex;flex-direction:column;align-items:center;gap:4px;${canEdit?'cursor:pointer':'cursor:default'}"><input type="checkbox" id="svc-col-${s.k}" ${canEdit?'': 'disabled'} onchange="toggleSvcColumn('${s.k}',this.checked)"><span>${s.l}</span></label></th>`).join('');
   const tb=document.getElementById('tb-svc-massa');
   if(!data.length){tb.innerHTML=`<tr><td colspan="${4+SVCS.length}"><div class="empty"><div class="empty-t">Nenhum cliente encontrado</div></div></td></tr>`;updateSvcSelectedInfo();return;}
   tb.innerHTML=data.map(c=>{
     const d=svcDraft.get(c.id)||svcClientFlags(c);const o=svcOriginal.get(c.id)||{};
-    return `<tr><td class="sticky-cb"><input type="checkbox" ${svcSelected.has(c.id)?'checked':''} onchange="toggleSvcRow('${c.id}',this.checked)"></td><td class="sticky-code" style="font-family:monospace;color:#1d4ed8;font-weight:600">${c.codigo}</td><td class="sticky-name" style="font-weight:500">${c.nome}</td><td class="sticky-resp">${c.responsavel||'—'}</td>${SVCS.map(s=>{const changed=d[s.k]!==o[s.k];return `<td class="${changed?'svc-changed':''}"><input type="checkbox" ${d[s.k]?'checked':''} onchange="setSvcFlag('${c.id}','${s.k}',this.checked)"></td>`}).join('')}</tr>`;
+    return `<tr><td class="sticky-cb">${canEdit?`<input type="checkbox" ${svcSelected.has(c.id)?'checked':''} onchange="toggleSvcRow('${c.id}',this.checked)">`:''}</td><td class="sticky-code" style="font-family:monospace;color:#1d4ed8;font-weight:600">${c.codigo}</td><td class="sticky-name" style="font-weight:500">${c.nome}</td><td class="sticky-resp">${c.responsavel||'—'}</td>${SVCS.map(s=>{const changed=d[s.k]!==o[s.k];return `<td class="${changed?'svc-changed':''}"><input type="checkbox" ${d[s.k]?'checked':''} ${canEdit?'':'disabled'} onchange="setSvcFlag('${c.id}','${s.k}',this.checked)"></td>`}).join('')}</tr>`;
   }).join('');
   const allVisible=data.length>0&&data.every(c=>svcSelected.has(c.id));
   const pc=document.getElementById('svc-page-check');if(pc)pc.checked=allVisible;
@@ -1664,6 +1634,7 @@ function toggleSvcRow(id,checked){checked?svcSelected.add(id):svcSelected.delete
 function toggleVisibleSvcRows(checked){svcFilteredClients().forEach(c=>checked?svcSelected.add(c.id):svcSelected.delete(c.id));renderServiceMatrix();}
 function toggleAllSvcRows(checked){const data=svcFilteredClients();data.forEach(c=>checked?svcSelected.add(c.id):svcSelected.delete(c.id));renderServiceMatrix();}
 function toggleSvcColumn(key,checked){
+  if(!can('editarClientes')) return;
   const data=svcFilteredClients();
   if(!data.length){toast('Não existem clientes nos filtros atuais','inf');return;}
   data.forEach(c=>{
@@ -1682,6 +1653,7 @@ function enforceIvaExclusive(flags, changedKey){
   return flags;
 }
 function setSvcFlag(id,key,val){
+  if(!can('editarClientes')) return;
   const d={...(svcDraft.get(id)||{})};
   d[key]=!!val;
   enforceIvaExclusive(d,key);
@@ -1689,6 +1661,7 @@ function setSvcFlag(id,key,val){
   renderServiceMatrix();
 }
 function bulkSetService(val){
+  if(!can('editarClientes')) return;
   const key=document.getElementById('svc-bulk-service').value;
   if(!key){toast('Escolhe primeiro um serviço','inf');return;}
   if(!svcSelected.size){toast('Seleciona pelo menos um cliente','inf');return;}
@@ -1702,6 +1675,7 @@ function bulkSetService(val){
 }
 function svcChangedRows(){const out=[];svcDraft.forEach((d,id)=>{const o=svcOriginal.get(id)||{};const patch={};SVCS.forEach(s=>{if(!!d[s.k]!==!!o[s.k])patch[s.k]=!!d[s.k];});if(Object.keys(patch).length)out.push({id,patch});});return out;}
 async function saveServiceMatrix(){
+  if(!can('editarClientes')){toast('Sem permissão para alterar serviços','err');return;}
   const conflitos=[];
   svcDraft.forEach((d,id)=>{if(d.tem_iva_mensal&&d.tem_iva_trimestral){const c=clis.find(x=>x.id===id);conflitos.push(c?.nome||id);}});
   if(conflitos.length){toast('Não é possível guardar: existem clientes com IVA Mensal e IVA Trimestral em simultâneo.','err');return;}
@@ -3296,7 +3270,7 @@ document.querySelectorAll('.ntab').forEach(tab=>{
     document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));
     tab.classList.add('on');
     document.getElementById('page-'+p).classList.add('on');
-    if(p==='servicos-massa')await loadServiceMatrix();
+    if(p==='clientes'){await loadClis();await loadServiceMatrix();}
     if(p==='iva-cessadas')await loadIvaCessadas();
     if(p==='iva-tri')await loadIvaTri();
     if(p==='iva-men')await loadIvaMen();
