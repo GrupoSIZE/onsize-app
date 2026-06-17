@@ -1196,36 +1196,6 @@ function tableToExcelDownload(table, filename, sheetName) {
     th,td{border:1px solid #b8b8b8;padding:5px;white-space:nowrap}
     th{background:#1f4e78;color:#fff;font-weight:700}
   </style></head><body><table>${clone.innerHTML}</table>
-<script>
-(function(){
-  async function recoverLoginUsers(){
-    const sel=document.getElementById('lsel');
-    if(!sel) return;
-    try{
-      const fallback=(typeof FALLBACK!=='undefined' && Array.isArray(FALLBACK))?FALLBACK:[];
-      if(!sel.options.length || sel.options.length<=1){
-        sel.innerHTML='<option value="">— Seleccionar —</option>';
-        fallback.forEach(r=>sel.add(new Option(r.nome,String(r.id))));
-        if(typeof resps!=='undefined') resps=fallback.slice();
-      }
-      if(typeof sb!=='undefined' && sb){
-        const result=await sb.from('responsaveis').select('*').eq('estado','Ativo').order('nome');
-        if(!result.error && Array.isArray(result.data) && result.data.length){
-          if(typeof resps!=='undefined') resps=result.data;
-          sel.innerHTML='<option value="">— Seleccionar —</option>';
-          result.data.forEach(r=>sel.add(new Option(r.nome,String(r.id))));
-        }
-      }
-    }catch(err){
-      console.error('Falha ao carregar utilizadores do login:',err);
-    }
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',recoverLoginUsers,{once:true});
-  else recoverLoginUsers();
-  setTimeout(recoverLoginUsers,800);
-})();
-</script>
-
 </body></html>`;
   const blob = new Blob(['\ufeff', html], {type:'application/vnd.ms-excel;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
