@@ -381,6 +381,26 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
 .svc-changed{outline:2px solid #f59e0b;outline-offset:-2px}
 .test-banner{font-size:11px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:6px;padding:7px 10px;margin-left:auto}
 
+
+
+/* MÓDULO FÉRIAS — mapa anual agregado */
+.ferias-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.ferias-kpis{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.ferias-card{background:#fff;border:1px solid var(--bdr);border-radius:10px;padding:12px 14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.ferias-card-n{font-size:24px;font-weight:800;line-height:1}.ferias-card-l{font-size:11px;color:#64748b;text-transform:uppercase;margin-top:5px;letter-spacing:.04em}
+.ferias-legend{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px;font-size:11px;color:#475569}.ferias-person{display:inline-flex;align-items:center;gap:5px;border:1px solid #e5e7eb;border-radius:999px;padding:3px 8px;background:#fff}.ferias-dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+.ferias-map-wrap{background:#fff;border:1px solid var(--bdr);border-radius:10px;overflow:auto;box-shadow:var(--sh);max-height:520px;margin-bottom:14px}
+.ferias-map{border-collapse:separate;border-spacing:0;min-width:1300px;width:100%;font-size:11px}
+.ferias-map th,.ferias-map td{border-right:1px solid #d1d5db;border-bottom:1px solid #d1d5db;padding:0;text-align:center;min-width:34px;height:30px;position:relative}
+.ferias-map th{background:#f1f0ec;position:sticky;top:0;z-index:3;font-weight:700;color:#374151}
+.ferias-map .mcol{position:sticky;left:0;z-index:5;min-width:105px;background:#f8fafc;text-align:left;font-weight:800;padding-left:8px;border-right:2px solid #111827}
+.ferias-map th.mcol{z-index:7;background:#111827;color:#fff;text-align:center;padding-left:0}
+.ferias-map .dow{font-size:10px;font-weight:700;color:#111827}.ferias-map .daynum{font-size:10px;color:#111827;position:absolute;right:2px;top:1px}.ferias-map .weekend{background:#e5e7eb}.ferias-map .emptyday{background:#f3f4f6;color:#cbd5e1}.ferias-map .today{outline:2px solid #2563eb;outline-offset:-2px}.ferias-map .critical{box-shadow:inset 0 0 0 2px #dc2626}.ferias-map .pending{box-shadow:inset 0 -4px 0 #f59e0b}.ferias-map .approved{box-shadow:inset 0 -4px 0 #16a34a}.ferias-cell-fill{position:absolute;inset:0;opacity:.86}.ferias-cell-label{position:relative;z-index:2;font-size:10px;color:#111827;text-shadow:0 1px 1px rgba(255,255,255,.7)}
+.ferias-summary-wrap{background:#fff;border:1px solid var(--bdr);border-radius:10px;overflow:auto;box-shadow:var(--sh);margin-bottom:14px}
+.ferias-summary{min-width:900px;width:100%;border-collapse:collapse}.ferias-summary th{background:#111827!important;color:#fff!important}.ferias-summary td,.ferias-summary th{padding:7px 9px;border-bottom:1px solid #e5e7eb;text-align:center}.ferias-summary td:first-child,.ferias-summary th:first-child{text-align:left;font-weight:700}
+.ferias-actions{display:flex;gap:6px;justify-content:center}.ferias-small{font-size:10px;color:#64748b}.ferias-modal-error{color:#b91c1c;font-size:12px;margin-top:8px;min-height:16px}
+@media(max-width:900px){.ferias-kpis{grid-template-columns:1fr 1fr}.ferias-map-wrap{max-height:420px}}
+
 </style>
 </head>
 <body>
@@ -449,6 +469,7 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
       <div class="nav-group-title">Gestão</div>
       <a class="ntab" data-p="resumo">Resumo</a>
       <a class="ntab" data-p="calendario">Calendário Fiscal</a>
+      <a class="ntab" data-p="ferias">Férias</a>
       <a class="ntab hide" data-p="auditoria" id="tab-audit">Auditoria</a>
     </div>
   </div>
@@ -818,6 +839,23 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
 </div>
 
 <!-- RESUMO -->
+
+
+<!-- FÉRIAS -->
+<div class="page" id="page-ferias">
+  <div class="ferias-toolbar">
+    <span class="tb-title">Mapa de Férias</span><span class="tb-count" id="cnt-ferias">—</span>
+    <select class="fil" id="fil-ferias-ano" onchange="changeFeriasYear(this.value)"><option value="2026">2026</option></select>
+    <select class="fil" id="fil-ferias-estado" onchange="renderFerias()"><option value="">Todos os estados</option><option>Pedido</option><option>Aprovado</option><option>Rejeitado</option></select>
+    <div class="srch"><span class="si">🔍</span><input id="src-ferias" placeholder="Pesquisar colaborador..." oninput="renderFerias()"></div>
+    <button class="btn btn-p" onclick="openFeriasPedido()">＋ Novo pedido</button>
+    <button class="btn btn-s" onclick="openFeriasSaldos()">Saldos</button>
+    <button class="btn btn-s admin-only" onclick="openFeriasPermissoes()">Permissões</button>
+    <button class="btn btn-s admin-only" onclick="openFeriasCritico()">＋ Período crítico</button>
+  </div>
+  <div id="ferias-content"><div class="loading"><div class="spin"></div> A carregar...</div></div>
+</div>
+
 <div class="page" id="page-resumo">
   <div class="tb"><span class="tb-title">Resumo — Ponto de situação</span></div>
   <div id="resumo-body"><div class="loading"><div class="spin"></div> A calcular...</div></div>
@@ -951,6 +989,45 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     </div>
   </div>
 </div>
+
+
+
+<!-- MODAIS FÉRIAS -->
+<div class="mov" id="mferias-pedido"><div class="modal" style="width:520px">
+  <div class="mh"><div class="mt">Pedido de férias</div><button class="btn-ic" onclick="closeFeriasPedido()">✕</button></div>
+  <div class="mb"><div class="fg">
+    <div class="fl ff"><label>Colaborador</label><select id="ferias-p-resp"></select></div>
+    <div class="fl"><label>Data início</label><input id="ferias-p-ini" type="date"></div>
+    <div class="fl"><label>Data fim</label><input id="ferias-p-fim" type="date"></div>
+    <div class="fl ff"><label>Observações</label><textarea id="ferias-p-obs" rows="3"></textarea></div>
+    <div class="ff ferias-modal-error" id="ferias-p-error"></div>
+  </div></div>
+  <div class="mf"><button class="btn btn-s" onclick="closeFeriasPedido()">Cancelar</button><button class="btn btn-p" onclick="saveFeriasPedido()">Submeter</button></div>
+</div></div>
+
+<div class="mov" id="mferias-saldos"><div class="modal" style="width:850px">
+  <div class="mh"><div class="mt">Saldos de férias</div><button class="btn-ic" onclick="closeFeriasSaldos()">✕</button></div>
+  <div class="mb" id="ferias-saldos-body"></div>
+  <div class="mf"><button class="btn btn-s" onclick="closeFeriasSaldos()">Fechar</button><button class="btn btn-p admin-only" onclick="saveFeriasSaldos()">Guardar</button></div>
+</div></div>
+
+<div class="mov" id="mferias-perm"><div class="modal" style="width:620px">
+  <div class="mh"><div class="mt">Permissões de aprovação de férias</div><button class="btn-ic" onclick="closeFeriasPermissoes()">✕</button></div>
+  <div class="mb" id="ferias-perm-body"></div>
+  <div class="mf"><button class="btn btn-s" onclick="closeFeriasPermissoes()">Fechar</button><button class="btn btn-p" onclick="saveFeriasPermissoes()">Guardar</button></div>
+</div></div>
+
+<div class="mov" id="mferias-critico"><div class="modal" style="width:540px">
+  <div class="mh"><div class="mt">Período crítico</div><button class="btn-ic" onclick="closeFeriasCritico()">✕</button></div>
+  <div class="mb"><div class="fg">
+    <div class="fl"><label>Data início</label><input id="ferias-c-ini" type="date"></div>
+    <div class="fl"><label>Data fim</label><input id="ferias-c-fim" type="date"></div>
+    <div class="fl ff"><label>Descrição</label><input id="ferias-c-desc" placeholder="Ex: Fecho IVA / Modelo 10 / período crítico"></div>
+    <div class="fl"><label>Nível</label><select id="ferias-c-nivel"><option value="aviso">Aviso</option><option value="bloqueio">Bloqueio</option></select></div>
+    <div class="ff ferias-modal-error" id="ferias-c-error"></div>
+  </div></div>
+  <div class="mf"><button class="btn btn-s" onclick="closeFeriasCritico()">Cancelar</button><button class="btn btn-p" onclick="saveFeriasCritico()">Guardar</button></div>
+</div></div>
 
 <div id="toast"></div>
 <script>
@@ -1244,7 +1321,27 @@ function tableToExcelDownload(table, filename, sheetName) {
     table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px}
     th,td{border:1px solid #b8b8b8;padding:5px;white-space:nowrap}
     th{background:#1f4e78;color:#fff;font-weight:700}
-  </style></head><body><table>${clone.innerHTML}</table></body></html>`;
+  
+
+/* MÓDULO FÉRIAS — mapa anual agregado */
+.ferias-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.ferias-kpis{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.ferias-card{background:#fff;border:1px solid var(--bdr);border-radius:10px;padding:12px 14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.ferias-card-n{font-size:24px;font-weight:800;line-height:1}.ferias-card-l{font-size:11px;color:#64748b;text-transform:uppercase;margin-top:5px;letter-spacing:.04em}
+.ferias-legend{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px;font-size:11px;color:#475569}.ferias-person{display:inline-flex;align-items:center;gap:5px;border:1px solid #e5e7eb;border-radius:999px;padding:3px 8px;background:#fff}.ferias-dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+.ferias-map-wrap{background:#fff;border:1px solid var(--bdr);border-radius:10px;overflow:auto;box-shadow:var(--sh);max-height:520px;margin-bottom:14px}
+.ferias-map{border-collapse:separate;border-spacing:0;min-width:1300px;width:100%;font-size:11px}
+.ferias-map th,.ferias-map td{border-right:1px solid #d1d5db;border-bottom:1px solid #d1d5db;padding:0;text-align:center;min-width:34px;height:30px;position:relative}
+.ferias-map th{background:#f1f0ec;position:sticky;top:0;z-index:3;font-weight:700;color:#374151}
+.ferias-map .mcol{position:sticky;left:0;z-index:5;min-width:105px;background:#f8fafc;text-align:left;font-weight:800;padding-left:8px;border-right:2px solid #111827}
+.ferias-map th.mcol{z-index:7;background:#111827;color:#fff;text-align:center;padding-left:0}
+.ferias-map .dow{font-size:10px;font-weight:700;color:#111827}.ferias-map .daynum{font-size:10px;color:#111827;position:absolute;right:2px;top:1px}.ferias-map .weekend{background:#e5e7eb}.ferias-map .emptyday{background:#f3f4f6;color:#cbd5e1}.ferias-map .today{outline:2px solid #2563eb;outline-offset:-2px}.ferias-map .critical{box-shadow:inset 0 0 0 2px #dc2626}.ferias-map .pending{box-shadow:inset 0 -4px 0 #f59e0b}.ferias-map .approved{box-shadow:inset 0 -4px 0 #16a34a}.ferias-cell-fill{position:absolute;inset:0;opacity:.86}.ferias-cell-label{position:relative;z-index:2;font-size:10px;color:#111827;text-shadow:0 1px 1px rgba(255,255,255,.7)}
+.ferias-summary-wrap{background:#fff;border:1px solid var(--bdr);border-radius:10px;overflow:auto;box-shadow:var(--sh);margin-bottom:14px}
+.ferias-summary{min-width:900px;width:100%;border-collapse:collapse}.ferias-summary th{background:#111827!important;color:#fff!important}.ferias-summary td,.ferias-summary th{padding:7px 9px;border-bottom:1px solid #e5e7eb;text-align:center}.ferias-summary td:first-child,.ferias-summary th:first-child{text-align:left;font-weight:700}
+.ferias-actions{display:flex;gap:6px;justify-content:center}.ferias-small{font-size:10px;color:#64748b}.ferias-modal-error{color:#b91c1c;font-size:12px;margin-top:8px;min-height:16px}
+@media(max-width:900px){.ferias-kpis{grid-template-columns:1fr 1fr}.ferias-map-wrap{max-height:420px}}
+
+</style></head><body><table>${clone.innerHTML}</table></body></html>`;
   const blob = new Blob(['\ufeff', html], {type:'application/vnd.ms-excel;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2516,7 +2613,7 @@ async function loadAnualModule(key){
   if(tb)tb.innerHTML='<tr><td colspan="99"><div class="loading"><div class="spin"></div> A carregar...</div></td></tr>';
   const {data:cl,error:e1}=await sb.from('clientes').select('id,codigo,nome,responsavel').eq(cfg.flag,true).eq('estado','Ativo').order('codigo');
   const {data:rg,error:e2}=await sb.from(cfg.table).select('*').eq('ano',ANO);
-  if(e1||e2){ if(tb)tb.innerHTML=`<tr><td colspan="99"><div class="empty"><div class="empty-t">Erro ao carregar</div><div>${escHtml((e1||e2).message)}</div></div></td></tr>`; toast('Erro: '+(e1||e2).message,'err'); return; }
+  if(e1||e2){ if(tb)tb.innerHTML=`<tr><td colspan="99"><div class="empty"><div class="empty-t">Erro ao carregar</div><div>${escapeHtml((e1||e2).message)}</div></div></td></tr>`; toast('Erro: '+(e1||e2).message,'err'); return; }
   const q=(document.getElementById(cfg.src)?.value||'').toLowerCase();
   const fr=document.getElementById(cfg.resp)?.value||'';
   const fe=cfg.estado?(document.getElementById(cfg.estado)?.value||''):'';
@@ -2529,9 +2626,9 @@ async function loadAnualModule(key){
   if(!filtered.length){tb.innerHTML=`<tr><td colspan="${cfg.fields.length+3}"><div class="empty"><div class="empty-t">${cfg.empty}</div></div></td></tr>`;return;}
   tb.innerHTML=filtered.map((c,ri)=>{const r=map[c.id]||{};const bg=rowBg(ri);let cells='';
     for(const [field,label,type] of cfg.fields){const v=r[field]??'';const shown=displayAnualValue(v,type);const safe=String(v).replace(/'/g,'&#39;');
-      cells += edit?`<td style="text-align:center;cursor:pointer" onclick="anualEdit(this,'${key}','${c.id}','${field}','${safe}','${type}')">${escHtml(shown)}</td>`:`<td style="text-align:center">${escHtml(shown)}</td>`;
+      cells += edit?`<td style="text-align:center;cursor:pointer" onclick="anualEdit(this,'${key}','${c.id}','${field}','${safe}','${type}')">${escapeHtml(shown)}</td>`:`<td style="text-align:center">${escapeHtml(shown)}</td>`;
     }
-    return `<tr><td class="sc sc1" style="background:${bg};font-family:monospace;color:#1d4ed8;font-weight:600">${c.codigo}</td><td class="sc sc2" style="background:${bg};font-weight:500">${escHtml(c.nome)}</td><td class="sc sc3" style="background:${bg}">${escHtml(c.responsavel||'')}</td>${cells}</tr>`;
+    return `<tr><td class="sc sc1" style="background:${bg};font-family:monospace;color:#1d4ed8;font-weight:600">${c.codigo}</td><td class="sc sc2" style="background:${bg};font-weight:500">${escapeHtml(c.nome)}</td><td class="sc sc3" style="background:${bg}">${escapeHtml(c.responsavel||'')}</td>${cells}</tr>`;
   }).join('');
 }
 function anualEdit(td,key,cid,field,val,type){
@@ -3222,6 +3319,137 @@ document.getElementById('fil-cal-ano')?.addEventListener('change',e=>changeWorkY
 document.getElementById('fil-cal-area')?.addEventListener('change',renderCalendario);
 document.getElementById('src-cal')?.addEventListener('input',renderCalendario);
 
+
+
+// ══════════════════════════════════════════════════════════
+// FÉRIAS — mapa anual agregado por dia e colaborador
+// ══════════════════════════════════════════════════════════
+let FERIAS_ANO = 2026;
+let feriasState = {colabs:[],saldos:[],pedidos:[],criticos:[]};
+const FERIAS_PALETTE = ['#E11D48','#2563EB','#16A34A','#F97316','#7C3AED','#0891B2','#CA8A04','#DB2777','#0F766E','#B91C1C','#4F46E5','#65A30D','#9333EA','#EA580C','#0284C7'];
+function pad2(n){return String(n).padStart(2,'0');}
+function feriasIso(y,m,d){return `${y}-${pad2(m)}-${pad2(d)}`;}
+function feriasDate(v){const [y,m,d]=String(v).split('-').map(Number);return new Date(y,m-1,d);}
+function feriasDaysInMonth(y,m){return new Date(y,m,0).getDate();}
+function feriasDowLabel(y,m,d){return ['D','S','T','Q','Q','S','S'][new Date(y,m-1,d).getDay()];}
+function feriasWeekend(y,m,d){const wd=new Date(y,m-1,d).getDay();return wd===0||wd===6;}
+function feriasBusinessDays(ini,fim){if(!ini||!fim)return 0;let a=feriasDate(ini),b=feriasDate(fim),n=0;if(b<a)return 0;for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1)){const wd=d.getDay();if(wd!==0&&wd!==6)n++;}return n;}
+function feriasEachDate(ini,fim,cb){let a=feriasDate(ini),b=feriasDate(fim);for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1)){cb(`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`,d);}}
+function feriasCanApprove(){return isAdminUser() || feriasState.colabs.some(c=>String(c.responsavel_nome)===String(user?.nome||'') && c.pode_aprovar);}
+function feriasCor(nome){return (feriasState.colabs.find(c=>c.responsavel_nome===nome)?.cor)||FERIAS_PALETTE[Math.abs(String(nome||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0))%FERIAS_PALETTE.length];}
+function feriasSaldo(nome){return feriasState.saldos.find(s=>s.responsavel_nome===nome)||{responsavel_nome:nome,direito_anual:22,dias_transitados:0,ajustes:0};}
+function feriasSaldoTotal(nome){const s=feriasSaldo(nome);return Number(s.direito_anual||0)+Number(s.dias_transitados||0)+Number(s.ajustes||0);}
+function feriasUsados(nome,includePending=true){return feriasState.pedidos.filter(p=>p.responsavel_nome===nome && (p.estado==='Aprovado'||(includePending&&p.estado==='Pedido'))).reduce((a,p)=>a+Number(p.dias_uteis||0),0);}
+function feriasDisponivel(nome){return feriasSaldoTotal(nome)-feriasUsados(nome,true);}
+async function loadFerias(){
+  const cont=document.getElementById('ferias-content'); if(!cont)return;
+  cont.innerHTML='<div class="loading"><div class="spin"></div> A carregar...</div>';
+  try{
+    FERIAS_ANO=Number(document.getElementById('fil-ferias-ano')?.value||ANO||2026);
+    const [c,s,p,cr]=await Promise.all([
+      sb.from('ferias_colaboradores').select('*').order('responsavel_nome'),
+      sb.from('ferias_saldos').select('*').eq('ano',FERIAS_ANO),
+      sb.from('ferias_pedidos').select('*').eq('ano',FERIAS_ANO).order('data_inicio'),
+      sb.from('ferias_periodos_criticos').select('*').eq('ano',FERIAS_ANO).order('data_inicio')
+    ]);
+    const err=c.error||s.error||p.error||cr.error;
+    if(err)throw err;
+    let colabs=c.data||[];
+    if(!colabs.length){
+      colabs=(resps||[]).filter(r=>r.estado==='Ativo').map((r,i)=>({responsavel_nome:r.nome,cor:FERIAS_PALETTE[i%FERIAS_PALETTE.length],pode_aprovar:false}));
+    }
+    feriasState={colabs,saldos:s.data||[],pedidos:p.data||[],criticos:cr.data||[]};
+    document.getElementById('cnt-ferias').textContent=feriasState.pedidos.length;
+    renderFerias();
+  }catch(e){cont.innerHTML=`<div class="empty"><div class="empty-t">Erro no módulo Férias</div><div>${escHtml(e.message||e)}</div><div style="margin-top:8px;color:#64748b">Confirma que executaste o novo SQL do módulo Férias.</div></div>`;toast('Erro Férias: '+(e.message||e),'err');}
+}
+function renderFerias(){
+  const cont=document.getElementById('ferias-content'); if(!cont)return;
+  const q=(document.getElementById('src-ferias')?.value||'').toLowerCase();
+  const estado=(document.getElementById('fil-ferias-estado')?.value||'');
+  const colabs=feriasState.colabs.filter(c=>!q||String(c.responsavel_nome).toLowerCase().includes(q));
+  const colNames=colabs.map(c=>c.responsavel_nome);
+  const pedidos=feriasState.pedidos.filter(p=>colNames.includes(p.responsavel_nome)&&(!estado||p.estado===estado));
+  const today=new Date();const todayIso=`${today.getFullYear()}-${pad2(today.getMonth()+1)}-${pad2(today.getDate())}`;
+  const pend=pedidos.filter(p=>p.estado==='Pedido').length;
+  const apr=pedidos.filter(p=>p.estado==='Aprovado').length;
+  const ausHoje=pedidos.filter(p=>p.estado==='Aprovado'&&p.data_inicio<=todayIso&&p.data_fim>=todayIso).length;
+  const neg=colabs.filter(c=>feriasDisponivel(c.responsavel_nome)<0).length;
+  const legend=colabs.map(c=>`<span class="ferias-person"><span class="ferias-dot" style="background:${c.cor}"></span>${escHtml(c.responsavel_nome)}</span>`).join('');
+  const eventsByDate={};
+  pedidos.filter(p=>p.estado==='Pedido'||p.estado==='Aprovado').forEach(p=>feriasEachDate(p.data_inicio,p.data_fim,(iso,d)=>{const wd=d.getDay();if(wd===0||wd===6)return;(eventsByDate[iso] ||= []).push(p);}));
+  const critByDate={};
+  feriasState.criticos.forEach(c=>feriasEachDate(c.data_inicio,c.data_fim,(iso)=>{(critByDate[iso] ||= []).push(c);}));
+  let map='<div class="ferias-map-wrap"><table class="ferias-map"><thead><tr><th class="mcol">Mês</th>';
+  for(let d=1;d<=31;d++)map+=`<th>${d}</th>`;
+  map+='</tr></thead><tbody>';
+  for(let m=1;m<=12;m++){
+    const dim=feriasDaysInMonth(FERIAS_ANO,m);
+    map+=`<tr><td class="mcol">${MESES[m-1]}</td>`;
+    for(let d=1;d<=31;d++){
+      if(d>dim){map+='<td class="emptyday"></td>';continue;}
+      const iso=feriasIso(FERIAS_ANO,m,d), ev=eventsByDate[iso]||[], crit=critByDate[iso]||[];
+      const weekend=feriasWeekend(FERIAS_ANO,m,d);
+      const cls=[weekend?'weekend':'',crit.length?'critical':'',iso===todayIso?'today':'',ev.some(x=>x.estado==='Pedido')?'pending':'',ev.some(x=>x.estado==='Aprovado')?'approved':''].filter(Boolean).join(' ');
+      let bg='',title=`${iso}`;
+      if(ev.length){const parts=ev.slice(0,8).map(e=>feriasCor(e.responsavel_nome));const pct=100/parts.length;bg=`linear-gradient(to right, ${parts.map((c,i)=>`${c} ${i*pct}%, ${c} ${(i+1)*pct}%`).join(',')})`;title=ev.map(e=>`${e.responsavel_nome} — ${e.estado}`).join(' | ');}
+      if(crit.length)title += ' | Crítico: '+crit.map(c=>c.descricao).join(', ');
+      map+=`<td class="${cls}" title="${escHtml(title)}">${bg?`<span class="ferias-cell-fill" style="background:${bg}"></span>`:''}<span class="daynum">${d}</span><span class="ferias-cell-label">${ev.length>1?ev.length:''}</span></td>`;
+    }
+    map+='</tr>';
+  }
+  map+='</tbody></table></div>';
+  const monthRows=colabs.map(c=>{
+    let cells='',total=0;
+    for(let m=1;m<=12;m++){const n=pedidos.filter(p=>p.responsavel_nome===c.responsavel_nome&&p.estado==='Aprovado'&&feriasDate(p.data_inicio).getMonth()+1<=m&&feriasDate(p.data_fim).getMonth()+1>=m).reduce((a,p)=>{let x=0;feriasEachDate(p.data_inicio,p.data_fim,(iso,d)=>{if(d.getMonth()+1===m&&d.getDay()!==0&&d.getDay()!==6)x++;});return a+x;},0);total+=n;cells+=`<td>${n||''}</td>`;}
+    const pendDias=pedidos.filter(p=>p.responsavel_nome===c.responsavel_nome&&p.estado==='Pedido').reduce((a,p)=>a+Number(p.dias_uteis||0),0);
+    return `<tr><td><span class="ferias-dot" style="background:${c.cor}"></span> ${escHtml(c.responsavel_nome)}</td>${cells}<td style="font-weight:800">${total}</td><td>${pendDias||''}</td><td style="font-weight:800;color:${feriasDisponivel(c.responsavel_nome)<0?'#b91c1c':'#15803d'}">${feriasDisponivel(c.responsavel_nome)}</td></tr>`;
+  }).join('');
+  const summary=`<div class="ferias-summary-wrap"><table class="ferias-summary"><thead><tr><th>Colaborador</th>${MESES.map(m=>`<th>${m.slice(0,3)}</th>`).join('')}<th>Total aprov.</th><th>Pendente</th><th>Saldo livre</th></tr></thead><tbody>${monthRows||'<tr><td colspan="16">Sem colaboradores</td></tr>'}</tbody></table></div>`;
+  const reqRows=pedidos.sort((a,b)=>String(a.data_inicio).localeCompare(String(b.data_inicio))).map(p=>`<tr><td>${escHtml(p.responsavel_nome)}</td><td>${fmtDate(p.data_inicio)}</td><td>${fmtDate(p.data_fim)}</td><td style="text-align:center">${p.dias_uteis}</td><td>${p.estado}</td><td>${escHtml(p.observacoes||'')}</td><td><div class="ferias-actions">${feriasCanApprove()&&p.estado==='Pedido'?`<button class="btn btn-sm btn-p" onclick="decideFeriasPedido(${p.id},'Aprovado')">Aprovar</button><button class="btn btn-sm btn-d" onclick="decideFeriasPedido(${p.id},'Rejeitado')">Rejeitar</button>`:''}</div></td></tr>`).join('');
+  const reqTable=`<div class="twrap"><table><thead><tr><th>Colaborador</th><th>Início</th><th>Fim</th><th>Dias úteis</th><th>Estado</th><th>Obs</th><th>Ações</th></tr></thead><tbody>${reqRows||'<tr><td colspan="7"><div class="empty"><div class="empty-t">Sem pedidos para os filtros selecionados</div></div></td></tr>'}</tbody></table></div>`;
+  cont.innerHTML=`<div class="ferias-kpis"><div class="ferias-card"><div class="ferias-card-n">${pend}</div><div class="ferias-card-l">Pedidos pendentes</div></div><div class="ferias-card"><div class="ferias-card-n">${apr}</div><div class="ferias-card-l">Pedidos aprovados</div></div><div class="ferias-card"><div class="ferias-card-n">${ausHoje}</div><div class="ferias-card-l">Ausentes hoje</div></div><div class="ferias-card"><div class="ferias-card-n">${neg}</div><div class="ferias-card-l">Saldos negativos</div></div></div><div class="ferias-legend">${legend}</div>${map}${summary}${reqTable}`;
+  document.querySelectorAll('#page-ferias .admin-only').forEach(x=>x.classList.toggle('hide',!isAdminUser()));
+}
+function changeFeriasYear(v){FERIAS_ANO=Number(v||ANO||2026);loadFerias();}
+function openFeriasPedido(){
+  document.getElementById('ferias-p-error').textContent='';
+  const sel=document.getElementById('ferias-p-resp');
+  const opts=(feriasCanApprove()?feriasState.colabs.map(c=>c.responsavel_nome):[user?.nome||'']).filter(Boolean);
+  sel.innerHTML=opts.map(n=>`<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+  document.getElementById('ferias-p-ini').value='';document.getElementById('ferias-p-fim').value='';document.getElementById('ferias-p-obs').value='';
+  document.getElementById('mferias-pedido').classList.add('on');
+}
+function closeFeriasPedido(){document.getElementById('mferias-pedido').classList.remove('on');}
+async function saveFeriasPedido(){
+  const err=document.getElementById('ferias-p-error'); err.textContent='';
+  const nome=document.getElementById('ferias-p-resp').value,ini=document.getElementById('ferias-p-ini').value,fim=document.getElementById('ferias-p-fim').value,obs=document.getElementById('ferias-p-obs').value.trim();
+  if(!nome||!ini||!fim){err.textContent='Preenche colaborador, início e fim.';return;}
+  const dias=feriasBusinessDays(ini,fim); if(dias<=0){err.textContent='O período não tem dias úteis ou as datas estão invertidas.';return;}
+  if(dias>feriasDisponivel(nome)){err.textContent=`Saldo insuficiente. Dias úteis: ${dias}. Saldo livre: ${feriasDisponivel(nome)}.`;return;}
+  const overlaps=[];feriasEachDate(ini,fim,(iso,d)=>{if(d.getDay()===0||d.getDay()===6)return;(feriasState.pedidos||[]).filter(p=>p.estado!=='Rejeitado'&&p.data_inicio<=iso&&p.data_fim>=iso&&p.responsavel_nome!==nome).forEach(p=>overlaps.push(`${iso}: ${p.responsavel_nome}`));});
+  const crit=[];feriasEachDate(ini,fim,(iso)=>{(feriasState.criticos||[]).filter(c=>c.data_inicio<=iso&&c.data_fim>=iso).forEach(c=>crit.push(`${iso}: ${c.descricao}`));});
+  if((overlaps.length||crit.length)&&!confirm(`Existem avisos neste período.\n\n${overlaps.slice(0,8).join('\n')}${crit.length?'\n'+crit.slice(0,8).join('\n'):''}\n\nSubmeter mesmo assim?`))return;
+  const payload={ano:FERIAS_ANO,responsavel_nome:nome,data_inicio:ini,data_fim:fim,dias_uteis:dias,estado:'Pedido',observacoes:obs||null,criado_por:user?.nome||null,updated_by:user?.nome||null};
+  const {error}=await sb.from('ferias_pedidos').insert(payload); if(error){err.textContent=error.message;return;}
+  toast('Pedido submetido'); closeFeriasPedido(); await loadFerias();
+}
+async function decideFeriasPedido(id,estado){if(!feriasCanApprove())return;const {error}=await sb.from('ferias_pedidos').update({estado,aprovado_por:user?.nome||null,aprovado_em:new Date().toISOString(),updated_by:user?.nome||null,updated_at:new Date().toISOString()}).eq('id',id);if(error){toast('Erro: '+error.message,'err');return;}toast('Pedido '+estado.toLowerCase());await loadFerias();}
+function openFeriasSaldos(){
+  const admin=isAdminUser();
+  document.getElementById('ferias-saldos-body').innerHTML=`<table class="ferias-summary"><thead><tr><th>Colaborador</th><th>Direito anual</th><th>Transitados</th><th>Ajustes</th><th>Total</th><th>Usados+Pendentes</th><th>Saldo livre</th></tr></thead><tbody>${feriasState.colabs.map(c=>{const s=feriasSaldo(c.responsavel_nome);return `<tr data-nome="${escHtml(c.responsavel_nome)}"><td><span class="ferias-dot" style="background:${c.cor}"></span> ${escHtml(c.responsavel_nome)}</td><td>${admin?`<input type="number" step="0.5" value="${s.direito_anual??22}" data-f="direito_anual" style="width:80px">`:s.direito_anual}</td><td>${admin?`<input type="number" step="0.5" value="${s.dias_transitados??0}" data-f="dias_transitados" style="width:80px">`:s.dias_transitados}</td><td>${admin?`<input type="number" step="0.5" value="${s.ajustes??0}" data-f="ajustes" style="width:80px">`:s.ajustes}</td><td>${feriasSaldoTotal(c.responsavel_nome)}</td><td>${feriasUsados(c.responsavel_nome,true)}</td><td>${feriasDisponivel(c.responsavel_nome)}</td></tr>`}).join('')}</tbody></table>`;
+  document.getElementById('mferias-saldos').classList.add('on');
+  document.querySelectorAll('#mferias-saldos .admin-only').forEach(x=>x.classList.toggle('hide',!admin));
+}
+function closeFeriasSaldos(){document.getElementById('mferias-saldos').classList.remove('on');}
+async function saveFeriasSaldos(){if(!isAdminUser())return;const rows=[...document.querySelectorAll('#ferias-saldos-body tr[data-nome]')];for(const tr of rows){const nome=tr.dataset.nome;const data={};tr.querySelectorAll('input').forEach(i=>data[i.dataset.f]=Number(i.value||0));await sb.from('ferias_saldos').upsert({ano:FERIAS_ANO,responsavel_nome:nome,...data,updated_by:user?.nome||null,updated_at:new Date().toISOString()},{onConflict:'ano,responsavel_nome'});}toast('Saldos guardados');closeFeriasSaldos();await loadFerias();}
+function openFeriasPermissoes(){if(!isAdminUser())return;document.getElementById('ferias-perm-body').innerHTML=`<table class="ferias-summary"><thead><tr><th>Colaborador</th><th>Cor</th><th>Pode aprovar férias</th></tr></thead><tbody>${feriasState.colabs.map(c=>`<tr data-nome="${escHtml(c.responsavel_nome)}"><td>${escHtml(c.responsavel_nome)}</td><td><input type="color" value="${c.cor||'#2563eb'}" data-f="cor"></td><td><input type="checkbox" data-f="pode_aprovar" ${c.pode_aprovar?'checked':''}></td></tr>`).join('')}</tbody></table><div class="ferias-small" style="margin-top:8px">Administrador aprova sempre. Esta autorização serve para técnicos/operacionais autorizados.</div>`;document.getElementById('mferias-perm').classList.add('on');}
+function closeFeriasPermissoes(){document.getElementById('mferias-perm').classList.remove('on');}
+async function saveFeriasPermissoes(){if(!isAdminUser())return;for(const tr of document.querySelectorAll('#ferias-perm-body tr[data-nome]')){const nome=tr.dataset.nome;const cor=tr.querySelector('input[data-f="cor"]').value;const pode=tr.querySelector('input[data-f="pode_aprovar"]').checked;await sb.from('ferias_colaboradores').upsert({responsavel_nome:nome,cor,pode_aprovar:pode,updated_by:user?.nome||null,updated_at:new Date().toISOString()},{onConflict:'responsavel_nome'});}toast('Permissões guardadas');closeFeriasPermissoes();await loadFerias();}
+function openFeriasCritico(){if(!isAdminUser())return;document.getElementById('ferias-c-error').textContent='';document.getElementById('ferias-c-ini').value='';document.getElementById('ferias-c-fim').value='';document.getElementById('ferias-c-desc').value='';document.getElementById('ferias-c-nivel').value='aviso';document.getElementById('mferias-critico').classList.add('on');}
+function closeFeriasCritico(){document.getElementById('mferias-critico').classList.remove('on');}
+async function saveFeriasCritico(){const err=document.getElementById('ferias-c-error');err.textContent='';const ini=document.getElementById('ferias-c-ini').value,fim=document.getElementById('ferias-c-fim').value,desc=document.getElementById('ferias-c-desc').value.trim(),nivel=document.getElementById('ferias-c-nivel').value;if(!ini||!fim||!desc){err.textContent='Preenche datas e descrição.';return;}const {error}=await sb.from('ferias_periodos_criticos').insert({ano:FERIAS_ANO,data_inicio:ini,data_fim:fim,descricao:desc,nivel,criado_por:user?.nome||null,updated_by:user?.nome||null});if(error){err.textContent=error.message;return;}toast('Período crítico guardado');closeFeriasCritico();await loadFerias();}
+
 // NAVEGAÇÃO
 // ══════════════════════════════════════════════════════════
 document.querySelectorAll('.ntab').forEach(tab=>{
@@ -3247,6 +3475,7 @@ document.querySelectorAll('.ntab').forEach(tab=>{
     if(p==='salarios')await loadSalarios();
     if(p==='independentes')await loadInd();
     if(p==='calendario')await loadCalendario();
+    if(p==='ferias')await loadFerias();
     if(p==='resumo')await loadResumo();
     if(p==='auditoria')await loadAuditoria();
     if(p==='responsaveis')await loadResps();
@@ -3254,7 +3483,7 @@ document.querySelectorAll('.ntab').forEach(tab=>{
 });
 
 // Fechar modais
-[['mcli',closeCli],['mresp',closeResp],['mcal',closeCal]].forEach(([id,fn])=>{
+[['mcli',closeCli],['mresp',closeResp],['mcal',closeCal],['mferias-pedido',closeFeriasPedido],['mferias-saldos',closeFeriasSaldos],['mferias-perm',closeFeriasPermissoes],['mferias-critico',closeFeriasCritico]].forEach(([id,fn])=>{
   document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)fn();});
 });
 
