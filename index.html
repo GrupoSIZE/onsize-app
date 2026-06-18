@@ -484,7 +484,7 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <span class="nuser" id="nuser"></span>
     <span class="nbadge" id="nbadge"></span>
     <button class="nsair" onclick="logout()">Sair</button>
-    <span id="build-badge" class="build-badge">BUILD BETA + NOVOS MÓDULOS ANUAIS 2026-06-18</span>
+    <span id="build-badge" class="build-badge">BUILD BETA + FÉRIAS + SERVIÇOS PERMISSÕES 2026-06-18</span>
   </div>
 </nav>
 
@@ -1550,7 +1550,12 @@ function loginOk() {
   if (can('verResp')) document.getElementById('tab-resp').classList.remove('hide');
   if (can('verAuditoria')) document.getElementById('tab-audit').classList.remove('hide');
   if (can('criar')) document.getElementById('btn-novo-cli').classList.remove('hide');
-  if (can('editarClientes')) document.getElementById('tab-servicos-massa')?.classList.remove('hide');
+  const svcTab=document.getElementById('tab-servicos-massa');
+  if (svcTab) {
+    const showSvc=!!can('editarClientes');
+    svcTab.classList.toggle('hide', !showSvc);
+    svcTab.style.display = showSvc ? '' : 'none';
+  }
   const yearBtn=document.getElementById('btn-open-year'); if(yearBtn){ const admin=isAdminUser(); yearBtn.classList.toggle('hide',!admin); yearBtn.style.display=admin?'block':'none'; }
   const closeBtn=document.getElementById('btn-close-year'); if(closeBtn){ const admin=isAdminUser(); closeBtn.classList.toggle('hide',!admin); closeBtn.style.display=admin?'block':'none'; }
   initApp();
@@ -1567,6 +1572,7 @@ function logout() {
   document.getElementById('page-clientes').classList.add('on');
   document.querySelectorAll('.ntab').forEach(t=>{t.classList.remove('on');});
   document.querySelector('[data-p="clientes"]').classList.add('on');
+  const svcTab=document.getElementById('tab-servicos-massa'); if(svcTab){ svcTab.classList.add('hide'); svcTab.style.display='none'; }
   const yearBtn=document.getElementById('btn-open-year'); if(yearBtn){ yearBtn.classList.add('hide'); yearBtn.style.display='none'; }
   const closeBtn=document.getElementById('btn-close-year'); if(closeBtn){ closeBtn.classList.add('hide'); closeBtn.style.display='none'; }
 }
@@ -3456,6 +3462,7 @@ document.querySelectorAll('.ntab').forEach(tab=>{
   tab.addEventListener('click',async e=>{
     e.preventDefault();
     const p=tab.dataset.p;
+    if(p==='servicos-massa' && !can('editarClientes')){ toast('Sem permissão para Gestão de Serviços','err'); return; }
     document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
     document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));
     tab.classList.add('on');
