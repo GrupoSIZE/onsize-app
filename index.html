@@ -434,12 +434,16 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
       <a class="ntab" data-p="saft">SAFT</a>
       <a class="ntab" data-p="retencoes">Retenções</a>
       <a class="ntab" data-p="modelo30">Modelo 30</a>
+      <a class="ntab" data-p="modelo10">Modelo 10</a>
+      <a class="ntab" data-p="faturacao-rendas">Faturação e Rendas</a>
       <a class="ntab" data-p="independentes">Independentes</a>
+      <a class="ntab" data-p="fecho">Fecho</a>
     </div>
     <div class="nav-group">
       <div class="nav-group-title">Laboral / Estatístico</div>
       <a class="ntab" data-p="salarios">Salários & DMR</a>
       <a class="ntab" data-p="cope">COPE & INE</a>
+      <a class="ntab" data-p="relatorio-unico">Relatório Único</a>
     </div>
     <div class="nav-group">
       <div class="nav-group-title">Gestão</div>
@@ -459,7 +463,7 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <span class="nuser" id="nuser"></span>
     <span class="nbadge" id="nbadge"></span>
     <button class="nsair" onclick="logout()">Sair</button>
-    <span id="build-badge" class="build-badge">BUILD BETA + SERVIÇOS EM MASSA POR COLUNA 2026-06-16</span>
+    <span id="build-badge" class="build-badge">BUILD BETA + NOVOS MÓDULOS ANUAIS 2026-06-18</span>
   </div>
 </nav>
 
@@ -723,6 +727,48 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
 </div>
 
 
+
+<!-- RELATÓRIO ÚNICO -->
+<div class="page" id="page-relatorio-unico">
+  <div class="tb">
+    <span class="tb-title">Relatório Único</span><span class="tb-count" id="cnt-ru">—</span>
+    <select class="fil" id="fil-ru-resp"><option value="">Todos os responsáveis</option></select>
+    <div class="srch"><span class="si">🔍</span><input id="src-ru" placeholder="Pesquisar cliente..."></div>
+  </div>
+  <div class="twrap twrap-x"><table><thead id="thead-ru"></thead><tbody id="tb-ru"><tr><td><div class="loading"><div class="spin"></div></div></td></tr></tbody></table></div>
+</div>
+
+<!-- MODELO 10 -->
+<div class="page" id="page-modelo10">
+  <div class="tb">
+    <span class="tb-title">Modelo 10</span><span class="tb-count" id="cnt-m10">—</span>
+    <select class="fil" id="fil-m10-resp"><option value="">Todos os responsáveis</option></select>
+    <div class="srch"><span class="si">🔍</span><input id="src-m10" placeholder="Pesquisar cliente..."></div>
+  </div>
+  <div class="twrap twrap-x"><table><thead id="thead-m10"></thead><tbody id="tb-m10"><tr><td><div class="loading"><div class="spin"></div></div></td></tr></tbody></table></div>
+</div>
+
+<!-- FECHO -->
+<div class="page" id="page-fecho">
+  <div class="tb">
+    <span class="tb-title">Fecho</span><span class="tb-count" id="cnt-fecho">—</span>
+    <select class="fil" id="fil-fecho-resp"><option value="">Todos os responsáveis</option></select>
+    <select class="fil" id="fil-fecho-estado"><option value="">Todos os estados</option><option value="A lançar">A lançar</option><option value="Em curso">Em curso</option><option value="Pronto">Pronto</option><option value="Fechado">Fechado</option></select>
+    <div class="srch"><span class="si">🔍</span><input id="src-fecho" placeholder="Pesquisar cliente..."></div>
+  </div>
+  <div class="twrap twrap-x"><table><thead id="thead-fecho"></thead><tbody id="tb-fecho"><tr><td><div class="loading"><div class="spin"></div></div></td></tr></tbody></table></div>
+</div>
+
+<!-- FATURAÇÃO E RENDAS -->
+<div class="page" id="page-faturacao-rendas">
+  <div class="tb">
+    <span class="tb-title">Faturação e Rendas</span><span class="tb-count" id="cnt-fat">—</span>
+    <select class="fil" id="fil-fat-resp"><option value="">Todos os responsáveis</option></select>
+    <div class="srch"><span class="si">🔍</span><input id="src-fat" placeholder="Pesquisar cliente..."></div>
+  </div>
+  <div class="twrap twrap-x"><table><thead id="thead-fat"></thead><tbody id="tb-fat"><tr><td><div class="loading"><div class="spin"></div></div></td></tr></tbody></table></div>
+</div>
+
 <!-- CALENDÁRIO FISCAL -->
 <div class="page" id="page-calendario">
   <div class="tb">
@@ -933,8 +979,9 @@ const SVCS = [
   {k:'tem_cope',l:'COPE'},{k:'tem_iva_trimestral',l:'IVA Trimestral'},
   {k:'tem_iva_mensal',l:'IVA Mensal'},{k:'tem_saft',l:'SAFT'},
   {k:'tem_salarios',l:'Salários/DMR'},{k:'tem_retencoes',l:'Retenções'},
-  {k:'tem_fecho',l:'Fecho Anual'},{k:'tem_modelo30',l:'Modelo 30'},
-  {k:'tem_independente',l:'Independentes'},
+  {k:'tem_fecho',l:'Fecho'},{k:'tem_modelo10',l:'Modelo 10'},
+  {k:'tem_relatorio_unico',l:'Relatório Único'},{k:'tem_faturacao_rendas',l:'Faturação e Rendas'},
+  {k:'tem_modelo30',l:'Modelo 30'},{k:'tem_independente',l:'Independentes'},
 ];
 
 const FALLBACK = [
@@ -1292,7 +1339,7 @@ async function auditedDirectDelete(table,id,clienteId=null){
 
 // ── Guardar no Supabase ───────────────────────────────────
 async function upsert(table, match, data) {
-  const YEAR_LOCKED_TABLES=new Set(['iva_trimestral','iva_mensal','cope','saft','retencoes','modelo30','salarios','independentes','calendario_fiscal']);
+  const YEAR_LOCKED_TABLES=new Set(['iva_trimestral','iva_mensal','cope','saft','retencoes','modelo30','modelo10','relatorio_unico','faturacao_rendas','fecho','salarios','independentes','calendario_fiscal']);
   if(YEAR_LOCKED_TABLES.has(table)) assertYearOpen();
 
   const {data:rows,error:readErr}=await sb.from(table).select('*').match(match).limit(1);
@@ -1551,7 +1598,7 @@ async function initApp() {
   });
   // Dropdowns responsáveis
   const fRes = document.getElementById('f-res');
-  ['fil-cli-resp','fil-iva-cess-resp','fil-tri-resp','fil-men-resp','fil-cope-resp','fil-saft-resp','fil-ret-resp','fil-m30-resp','fil-sal-resp','fil-ind-resp'].forEach(id => {
+  ['fil-cli-resp','fil-iva-cess-resp','fil-tri-resp','fil-men-resp','fil-cope-resp','fil-saft-resp','fil-ret-resp','fil-m30-resp','fil-m10-resp','fil-ru-resp','fil-fat-resp','fil-fecho-resp','fil-sal-resp','fil-ind-resp'].forEach(id => {
     const el = document.getElementById(id);
     resps.forEach(r => { el.innerHTML += `<option value="${r.nome}">${r.nome}</option>`; });
   });
@@ -2440,6 +2487,67 @@ function loadModelo30(){return loadFiscalMensal('modelo30');}
 ['fil-m30-resp'].forEach(id=>document.getElementById(id).addEventListener('change',loadModelo30));document.getElementById('src-m30').addEventListener('input',loadModelo30);
 
 
+
+// ══════════════════════════════════════════════════════════
+// MÓDULOS ANUAIS — RU / Modelo 10 / Fecho / Faturação e Rendas
+// ══════════════════════════════════════════════════════════
+const ANUAL_MODULES={
+  relatorio_unico:{flag:'tem_relatorio_unico',table:'relatorio_unico',cnt:'cnt-ru',resp:'fil-ru-resp',src:'src-ru',thead:'thead-ru',tbody:'tb-ru',empty:'Sem clientes com Relatório Único',fields:[
+    ['validar_entidade','Validar entidade/estab.','date'],['envio_dados_hig_seg','Hig. & Seg. / Delegação','text'],['horas_trabalhadas','Horas trabalhadas','num'],['anexo_c_formacao','Anexo C Formação','text'],['medicina_anexo_d','Medicina Anexo D','text'],['envio_ru','Envio RU','date'],['certificado','Certificado','date'],['obs','Obs','text']
+  ]},
+  modelo10:{flag:'tem_modelo10',table:'modelo10',cnt:'cnt-m10',resp:'fil-m10-resp',src:'src-m10',thead:'thead-m10',tbody:'tb-m10',empty:'Sem clientes com Modelo 10',fields:[
+    ['rv_portal_primavera','RV / 6224','text'],['ret_cat_b','Ret. Cat. B','text'],['ret_cat_f_irc_rendas','Ret. Cat. F / IRC Rendas','text'],['proc_integracao_salarios','Proc./Int. Salários','text'],['resp_execucao','Resp. Exec.','user'],['cat_a','Cat. A','date'],['cat_b','Cat. B','date'],['cat_f_r','Cat. F/R','date'],['fiscal_reporting','Fiscal Reporting','date'],['envio','Envio','date'],['obs','Obs','text']
+  ]},
+  faturacao_rendas:{flag:'tem_faturacao_rendas',table:'faturacao_rendas',cnt:'cnt-fat',resp:'fil-fat-resp',src:'src-fat',thead:'thead-fat',tbody:'tb-fat',empty:'Sem clientes com Faturação e Rendas',fields:[
+    ['obs','Obs','text'],['m1','Jan','text'],['m2','Fev','text'],['m3','Mar','text'],['m4','Abr','text'],['m5','Mai','text'],['m6','Jun','text'],['m7','Jul','text'],['m8','Ago','text'],['m9','Set','text'],['m10','Out','text'],['m11','Nov','text'],['m12','Dez','text']
+  ]},
+  fecho:{flag:'tem_fecho',table:'fecho',cnt:'cnt-fecho',resp:'fil-fecho-resp',src:'src-fecho',estado:'fil-fecho-estado',thead:'thead-fecho',tbody:'tb-fecho',empty:'Sem clientes com Fecho',fields:[
+    ['estado','Estado','status'],['resp_execucao','Resp. Exec.','user'],['inventario_valor','Inventário valor','money'],['inventario_envio_at','Envio Inventário AT','date'],['rec_bancaria','Rec. bancária','date'],['conf_saldos','Conf. saldos/balancete','text'],['balancete_fecho','Balancete fecho','date'],['dossier_fiscal','Dossier Fiscal','date'],['validacao_joana','Validação Joana','date'],['mes_13_14_15','Mês 13/14/15','date'],['balanco','Balanço','date'],['resultado','Resultado','money'],['coleta','Coleta','money'],['total_imposto','Total imposto','money'],['apuramento_primavera','Apuramento Primavera','date'],['retencao','Retenção','money'],['envio_mod22','Envio M22/3','date'],['imposto_guia','Imposto/Guia','money'],['envio_guia','Envio Guia','date'],['erros_m22','Erros M22','text'],['certificado_pme','Certificado PME','text'],['liquidacao_irc','Liquidação IRC','date'],['envio_email','Envio email','date'],['recapitulativos','Recapitulativos','text'],['obs','Obs','text'],['envio_ies','Envio IES','date'],['relatorio_ata','Relatório & Ata','date'],['ppc1','1.º PPC','text'],['ppc2','2.º PPC','text']
+  ]}
+};
+function displayAnualValue(v,type){
+  if(v===null||v===undefined||v==='')return '';
+  if(type==='money')return fmtEur(v);
+  return String(v);
+}
+async function loadAnualModule(key){
+  const cfg=ANUAL_MODULES[key]; if(!cfg)return;
+  const tb=document.getElementById(cfg.tbody); const th=document.getElementById(cfg.thead);
+  if(tb)tb.innerHTML='<tr><td colspan="99"><div class="loading"><div class="spin"></div> A carregar...</div></td></tr>';
+  const {data:cl,error:e1}=await sb.from('clientes').select('id,codigo,nome,responsavel').eq(cfg.flag,true).eq('estado','Ativo').order('codigo');
+  const {data:rg,error:e2}=await sb.from(cfg.table).select('*').eq('ano',ANO);
+  if(e1||e2){ if(tb)tb.innerHTML=`<tr><td colspan="99"><div class="empty"><div class="empty-t">Erro ao carregar</div><div>${escHtml((e1||e2).message)}</div></div></td></tr>`; toast('Erro: '+(e1||e2).message,'err'); return; }
+  const q=(document.getElementById(cfg.src)?.value||'').toLowerCase();
+  const fr=document.getElementById(cfg.resp)?.value||'';
+  const fe=cfg.estado?(document.getElementById(cfg.estado)?.value||''):'';
+  const clientes=(cl||[]).filter(c=>(!fr||c.responsavel===fr)&&(!q||c.codigo.toLowerCase().includes(q)||c.nome.toLowerCase().includes(q)));
+  const map={};(rg||[]).forEach(r=>map[r.cliente_id]=r);
+  const filtered=fe?clientes.filter(c=>(map[c.id]?.estado||'A lançar')===fe):clientes;
+  document.getElementById(cfg.cnt).textContent=filtered.length;
+  th.innerHTML='<tr><th class="sc sc1">Cód.</th><th class="sc sc2">Cliente</th><th class="sc sc3">Responsável</th>'+cfg.fields.map(([f,l])=>`<th>${l}</th>`).join('')+'</tr>';
+  const edit=can('editar');
+  if(!filtered.length){tb.innerHTML=`<tr><td colspan="${cfg.fields.length+3}"><div class="empty"><div class="empty-t">${cfg.empty}</div></div></td></tr>`;return;}
+  tb.innerHTML=filtered.map((c,ri)=>{const r=map[c.id]||{};const bg=rowBg(ri);let cells='';
+    for(const [field,label,type] of cfg.fields){const v=r[field]??'';const shown=displayAnualValue(v,type);const safe=String(v).replace(/'/g,'&#39;');
+      cells += edit?`<td style="text-align:center;cursor:pointer" onclick="anualEdit(this,'${key}','${c.id}','${field}','${safe}','${type}')">${escHtml(shown)}</td>`:`<td style="text-align:center">${escHtml(shown)}</td>`;
+    }
+    return `<tr><td class="sc sc1" style="background:${bg};font-family:monospace;color:#1d4ed8;font-weight:600">${c.codigo}</td><td class="sc sc2" style="background:${bg};font-weight:500">${escHtml(c.nome)}</td><td class="sc sc3" style="background:${bg}">${escHtml(c.responsavel||'')}</td>${cells}</tr>`;
+  }).join('');
+}
+function anualEdit(td,key,cid,field,val,type){
+  const cfg=ANUAL_MODULES[key];
+  const save=async nv=>{try{let value=nv||null;if(type==='money'||type==='num')value=nv===''?null:parseFloat(String(nv).replace(',','.'));await upsert(cfg.table,{cliente_id:cid,ano:ANO},{[field]:value});td.textContent=displayAnualValue(value,type);toast('Guardado por '+user.nome);}catch(e){toast('Erro: '+e.message,'err');}};
+  if(type==='user'){const opts=opcoesResponsavelExecucao();const inicial=podeEscolherQualquerResponsavel()?val:(user?.nome||'');editSel(td,inicial,opts,async nv=>save(responsavelExecucaoPermitido(nv)));}
+  else if(type==='date')editDateDirect(td,val,save);
+  else if(type==='money'||type==='num')editNumDirect(td,val,save);
+  else if(type==='status')editSel(td,val||'A lançar',['A lançar','Em curso','Pronto','Fechado'],save);
+  else editTxtDirect(td,val,save);
+}
+['fil-ru-resp','src-ru'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',()=>loadAnualModule('relatorio_unico'));el.addEventListener('change',()=>loadAnualModule('relatorio_unico'));}});
+['fil-m10-resp','src-m10'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',()=>loadAnualModule('modelo10'));el.addEventListener('change',()=>loadAnualModule('modelo10'));}});
+['fil-fat-resp','src-fat'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',()=>loadAnualModule('faturacao_rendas'));el.addEventListener('change',()=>loadAnualModule('faturacao_rendas'));}});
+['fil-fecho-resp','fil-fecho-estado','src-fecho'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',()=>loadAnualModule('fecho'));el.addEventListener('change',()=>loadAnualModule('fecho'));}});
+
 // ══════════════════════════════════════════════════════════
 // SALÁRIOS
 // ══════════════════════════════════════════════════════════
@@ -2853,7 +2961,7 @@ async function loadResumo() {
 // ══════════════════════════════════════════════════════════
 const AUDIT_MODULES={
   clientes:'Clientes',iva_trimestral:'IVA Trimestral',iva_mensal:'IVA Mensal',cope:'COPE & INE',
-  saft:'SAFT',retencoes:'Retenções',modelo30:'Modelo 30',salarios:'Salários & DMR',
+  saft:'SAFT',retencoes:'Retenções',modelo30:'Modelo 30',modelo10:'Modelo 10',relatorio_unico:'Relatório Único',faturacao_rendas:'Faturação e Rendas',fecho:'Fecho',salarios:'Salários & DMR',
   independentes:'Independentes',responsaveis:'Responsáveis',calendario_fiscal:'Calendário Fiscal',anos_fiscais:'Anos Fiscais'
 };
 async function loadAuditoria(){
@@ -3132,6 +3240,10 @@ document.querySelectorAll('.ntab').forEach(tab=>{
     if(p==='saft')await loadSaft();
     if(p==='retencoes')await loadRetencoes();
     if(p==='modelo30')await loadModelo30();
+    if(p==='modelo10')await loadAnualModule('modelo10');
+    if(p==='relatorio-unico')await loadAnualModule('relatorio_unico');
+    if(p==='faturacao-rendas')await loadAnualModule('faturacao_rendas');
+    if(p==='fecho')await loadAnualModule('fecho');
     if(p==='salarios')await loadSalarios();
     if(p==='independentes')await loadInd();
     if(p==='calendario')await loadCalendario();
