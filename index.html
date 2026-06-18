@@ -401,18 +401,6 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
 .ferias-actions{display:flex;gap:6px;justify-content:center}.ferias-small{font-size:10px;color:#64748b}.ferias-modal-error{color:#b91c1c;font-size:12px;margin-top:8px;min-height:16px}
 @media(max-width:900px){.ferias-kpis{grid-template-columns:1fr 1fr}.ferias-map-wrap{max-height:420px}}
 
-
-/* NOTIFICAÇÕES INTERNAS */
-.notif-bell{position:relative;border:1px solid rgba(201,194,61,.35);background:rgba(201,194,61,.08);color:#fff8a6;border-radius:7px;padding:6px 9px;cursor:pointer;font-size:14px;line-height:1}
-.notif-bell:hover{background:rgba(201,194,61,.18)}
-.notif-count{position:absolute;top:-7px;right:-7px;background:#dc2626;color:#fff;border-radius:999px;min-width:18px;height:18px;display:none;align-items:center;justify-content:center;font-size:10px;font-weight:800;padding:0 5px}
-.notif-count.on{display:flex}
-.notif-list{display:flex;flex-direction:column;gap:8px}
-.notif-item{border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;background:#fff}
-.notif-item.unread{border-color:#c9c23d;background:#fffde7}
-.notif-top{display:flex;justify-content:space-between;gap:10px;margin-bottom:4px}
-.notif-title{font-weight:700;color:#1f2937}.notif-date{font-size:11px;color:#6b7280;white-space:nowrap}.notif-msg{font-size:12px;color:#374151}.notif-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
-
 </style>
 </head>
 <body>
@@ -493,7 +481,6 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <div id="year-state" class="year-state">2026 — Aberto</div>
   </div>
   <div class="nright">
-    <button class="notif-bell" id="notif-bell" onclick="toggleNotificacoes()" title="Notificações">🔔<span class="notif-count" id="notif-count">0</span></button>
     <span class="nuser" id="nuser"></span>
     <span class="nbadge" id="nbadge"></span>
     <button class="nsair" onclick="logout()">Sair</button>
@@ -1043,13 +1030,6 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
 </div></div>
 
 <div id="toast"></div>
-
-<div class="mov" id="mnotificacoes"><div class="modal" style="width:620px">
-  <div class="mh"><div class="mt">Notificações</div><button class="btn-ic" onclick="closeNotificacoes()">✕</button></div>
-  <div class="mb" id="notificacoes-body"><div class="empty">Sem notificações</div></div>
-  <div class="mf"><button class="btn btn-s" onclick="marcarTodasNotificacoes()">Marcar todas como lidas</button><button class="btn btn-p" onclick="closeNotificacoes()">Fechar</button></div>
-</div></div>
-
 <script>
 // ══════════════════════════════════════════════════════════
 // CONFIG
@@ -1361,18 +1341,6 @@ function tableToExcelDownload(table, filename, sheetName) {
 .ferias-actions{display:flex;gap:6px;justify-content:center}.ferias-small{font-size:10px;color:#64748b}.ferias-modal-error{color:#b91c1c;font-size:12px;margin-top:8px;min-height:16px}
 @media(max-width:900px){.ferias-kpis{grid-template-columns:1fr 1fr}.ferias-map-wrap{max-height:420px}}
 
-
-/* NOTIFICAÇÕES INTERNAS */
-.notif-bell{position:relative;border:1px solid rgba(201,194,61,.35);background:rgba(201,194,61,.08);color:#fff8a6;border-radius:7px;padding:6px 9px;cursor:pointer;font-size:14px;line-height:1}
-.notif-bell:hover{background:rgba(201,194,61,.18)}
-.notif-count{position:absolute;top:-7px;right:-7px;background:#dc2626;color:#fff;border-radius:999px;min-width:18px;height:18px;display:none;align-items:center;justify-content:center;font-size:10px;font-weight:800;padding:0 5px}
-.notif-count.on{display:flex}
-.notif-list{display:flex;flex-direction:column;gap:8px}
-.notif-item{border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;background:#fff}
-.notif-item.unread{border-color:#c9c23d;background:#fffde7}
-.notif-top{display:flex;justify-content:space-between;gap:10px;margin-bottom:4px}
-.notif-title{font-weight:700;color:#1f2937}.notif-date{font-size:11px;color:#6b7280;white-space:nowrap}.notif-msg{font-size:12px;color:#374151}.notif-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
-
 </style></head><body><table>${clone.innerHTML}</table></body></html>`;
   const blob = new Blob(['\ufeff', html], {type:'application/vnd.ms-excel;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
@@ -1585,12 +1553,10 @@ function loginOk() {
   if (can('editarClientes')) document.getElementById('tab-servicos-massa')?.classList.remove('hide');
   const yearBtn=document.getElementById('btn-open-year'); if(yearBtn){ const admin=isAdminUser(); yearBtn.classList.toggle('hide',!admin); yearBtn.style.display=admin?'block':'none'; }
   const closeBtn=document.getElementById('btn-close-year'); if(closeBtn){ const admin=isAdminUser(); closeBtn.classList.toggle('hide',!admin); closeBtn.style.display=admin?'block':'none'; }
-  startNotificacoes();
   initApp();
 }
 
 function logout() {
-  if(notifTimer) clearInterval(notifTimer); notifTimer=null; NOTIFICACOES=[];
   user = null; pinBuf = '';
   document.getElementById('login').style.display = 'flex';
   document.getElementById('nav').style.display = 'none';
@@ -3359,50 +3325,6 @@ document.getElementById('src-cal')?.addEventListener('input',renderCalendario);
 // FÉRIAS — mapa anual agregado por dia e colaborador
 // ══════════════════════════════════════════════════════════
 let FERIAS_ANO = 2026;
-
-// ══════════════════════════════════════════════════════════
-// NOTIFICAÇÕES INTERNAS
-// ══════════════════════════════════════════════════════════
-let NOTIFICACOES=[]; let notifTimer=null;
-async function loadNotificacoes(){
-  if(!user?.nome || !sb) return;
-  try{
-    const {data,error}=await sb.from('notificacoes').select('*').in('destinatario',[String(user.nome),'Todos']).order('criado_em',{ascending:false}).limit(80);
-    if(error) throw error;
-    NOTIFICACOES=data||[];
-    const n=NOTIFICACOES.filter(x=>!x.lida).length;
-    const b=document.getElementById('notif-count');
-    if(b){b.textContent=n>99?'99+':String(n);b.classList.toggle('on',n>0);}
-    if(document.getElementById('mnotificacoes')?.classList.contains('on')) renderNotificacoes();
-  }catch(e){console.warn('Notificações:',e.message||e);}
-}
-function renderNotificacoes(){
-  const body=document.getElementById('notificacoes-body'); if(!body)return;
-  if(!NOTIFICACOES.length){body.innerHTML='<div class="empty">Sem notificações</div>';return;}
-  body.innerHTML=`<div class="notif-list">${NOTIFICACOES.map(n=>`<div class="notif-item ${n.lida?'':'unread'}"><div class="notif-top"><div class="notif-title">${escHtml(n.titulo||'Aviso')}</div><div class="notif-date">${fmtDateTime(n.criado_em)}</div></div><div class="notif-msg">${escHtml(n.mensagem||'')}</div>${!n.lida?`<div class="notif-actions"><button class="btn btn-sm btn-s" onclick="marcarNotificacao('${String(n.id)}')">Marcar como lida</button></div>`:''}</div>`).join('')}</div>`;
-}
-function toggleNotificacoes(){document.getElementById('mnotificacoes').classList.add('on');renderNotificacoes();loadNotificacoes();}
-function closeNotificacoes(){document.getElementById('mnotificacoes').classList.remove('on');}
-async function marcarNotificacao(id){const {error}=await sb.from('notificacoes').update({lida:true,lida_em:new Date().toISOString()}).eq('id',id);if(error){toast('Erro: '+error.message,'err');return;}await loadNotificacoes();}
-async function marcarTodasNotificacoes(){const ids=NOTIFICACOES.filter(n=>!n.lida).map(n=>n.id);if(!ids.length)return;const {error}=await sb.from('notificacoes').update({lida:true,lida_em:new Date().toISOString()}).in('id',ids);if(error){toast('Erro: '+error.message,'err');return;}await loadNotificacoes();}
-function startNotificacoes(){loadNotificacoes();if(notifTimer)clearInterval(notifTimer);notifTimer=setInterval(loadNotificacoes,60000);}
-async function criarNotificacoes(destinatarios,titulo,mensagem,tipo='geral',ref_id=null){
-  try{
-    const unique=[...new Set((destinatarios||[]).filter(Boolean).map(String))];
-    if(!unique.length)return;
-    const rows=unique.map(dest=>({destinatario:dest,titulo,mensagem,tipo,ref_id,criado_por:user?.nome||null}));
-    const {error}=await sb.from('notificacoes').insert(rows);
-    if(error)throw error;
-    if(unique.includes(String(user?.nome||''))||unique.includes('Todos')) await loadNotificacoes();
-  }catch(e){console.warn('Criar notificações:',e.message||e);}
-}
-function nomesAprovadoresFerias(){
-  const admins=(resps||[]).filter(r=>String(r.estado||'Ativo')==='Ativo' && String(r.nivel||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()==='administrador').map(r=>r.nome);
-  const autorizados=(feriasState.colabs||[]).filter(c=>c.pode_aprovar).map(c=>c.responsavel_nome);
-  return [...new Set([...admins,...autorizados].filter(Boolean))];
-}
-function fmtDateTime(v){if(!v)return '—';try{return new Date(v).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return String(v);}}
-
 let feriasState = {colabs:[],saldos:[],pedidos:[],criticos:[]};
 const FERIAS_PALETTE = ['#E11D48','#2563EB','#16A34A','#F97316','#7C3AED','#0891B2','#CA8A04','#DB2777','#0F766E','#B91C1C','#4F46E5','#65A30D','#9333EA','#EA580C','#0284C7'];
 function pad2(n){return String(n).padStart(2,'0');}
@@ -3509,19 +3431,10 @@ async function saveFeriasPedido(){
   const crit=[];feriasEachDate(ini,fim,(iso)=>{(feriasState.criticos||[]).filter(c=>c.data_inicio<=iso&&c.data_fim>=iso).forEach(c=>crit.push(`${iso}: ${c.descricao}`));});
   if((overlaps.length||crit.length)&&!confirm(`Existem avisos neste período.\n\n${overlaps.slice(0,8).join('\n')}${crit.length?'\n'+crit.slice(0,8).join('\n'):''}\n\nSubmeter mesmo assim?`))return;
   const payload={ano:FERIAS_ANO,responsavel_nome:nome,data_inicio:ini,data_fim:fim,dias_uteis:dias,estado:'Pedido',observacoes:obs||null,criado_por:user?.nome||null,updated_by:user?.nome||null};
-  const {data,error}=await sb.from('ferias_pedidos').insert(payload).select('id').single(); if(error){err.textContent=error.message;return;}
-  await criarNotificacoes(nomesAprovadoresFerias().filter(n=>n!==String(user?.nome||'')),'Novo pedido de férias',`${nome} pediu férias de ${fmtDate(ini)} a ${fmtDate(fim)} (${dias} dias úteis).`,'ferias',data?.id||null);
+  const {error}=await sb.from('ferias_pedidos').insert(payload); if(error){err.textContent=error.message;return;}
   toast('Pedido submetido'); closeFeriasPedido(); await loadFerias();
 }
-async function decideFeriasPedido(id,estado){
-  if(!feriasCanApprove())return;
-  const {data:pedido,error:readErr}=await sb.from('ferias_pedidos').select('*').eq('id',id).single();
-  if(readErr){toast('Erro: '+readErr.message,'err');return;}
-  const {error}=await sb.from('ferias_pedidos').update({estado,aprovado_por:user?.nome||null,aprovado_em:new Date().toISOString(),updated_by:user?.nome||null,updated_at:new Date().toISOString()}).eq('id',id);
-  if(error){toast('Erro: '+error.message,'err');return;}
-  await criarNotificacoes([pedido.responsavel_nome],`Pedido de férias ${estado.toLowerCase()}`,`O teu pedido de férias de ${fmtDate(pedido.data_inicio)} a ${fmtDate(pedido.data_fim)} foi ${estado.toLowerCase()} por ${user?.nome||'Administrador'}.`,'ferias',id);
-  toast('Pedido '+estado.toLowerCase());await loadFerias();
-}
+async function decideFeriasPedido(id,estado){if(!feriasCanApprove())return;const {error}=await sb.from('ferias_pedidos').update({estado,aprovado_por:user?.nome||null,aprovado_em:new Date().toISOString(),updated_by:user?.nome||null,updated_at:new Date().toISOString()}).eq('id',id);if(error){toast('Erro: '+error.message,'err');return;}toast('Pedido '+estado.toLowerCase());await loadFerias();}
 function openFeriasSaldos(){
   const admin=isAdminUser();
   document.getElementById('ferias-saldos-body').innerHTML=`<table class="ferias-summary"><thead><tr><th>Colaborador</th><th>Direito anual</th><th>Transitados</th><th>Ajustes</th><th>Total</th><th>Usados+Pendentes</th><th>Saldo livre</th></tr></thead><tbody>${feriasState.colabs.map(c=>{const s=feriasSaldo(c.responsavel_nome);return `<tr data-nome="${escHtml(c.responsavel_nome)}"><td><span class="ferias-dot" style="background:${c.cor}"></span> ${escHtml(c.responsavel_nome)}</td><td>${admin?`<input type="number" step="0.5" value="${s.direito_anual??22}" data-f="direito_anual" style="width:80px">`:s.direito_anual}</td><td>${admin?`<input type="number" step="0.5" value="${s.dias_transitados??0}" data-f="dias_transitados" style="width:80px">`:s.dias_transitados}</td><td>${admin?`<input type="number" step="0.5" value="${s.ajustes??0}" data-f="ajustes" style="width:80px">`:s.ajustes}</td><td>${feriasSaldoTotal(c.responsavel_nome)}</td><td>${feriasUsados(c.responsavel_nome,true)}</td><td>${feriasDisponivel(c.responsavel_nome)}</td></tr>`}).join('')}</tbody></table>`;
@@ -3570,7 +3483,7 @@ document.querySelectorAll('.ntab').forEach(tab=>{
 });
 
 // Fechar modais
-[['mcli',closeCli],['mresp',closeResp],['mcal',closeCal],['mferias-pedido',closeFeriasPedido],['mferias-saldos',closeFeriasSaldos],['mferias-perm',closeFeriasPermissoes],['mferias-critico',closeFeriasCritico],['mnotificacoes',closeNotificacoes]].forEach(([id,fn])=>{
+[['mcli',closeCli],['mresp',closeResp],['mcal',closeCal],['mferias-pedido',closeFeriasPedido],['mferias-saldos',closeFeriasSaldos],['mferias-perm',closeFeriasPermissoes],['mferias-critico',closeFeriasCritico]].forEach(([id,fn])=>{
   document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)fn();});
 });
 
