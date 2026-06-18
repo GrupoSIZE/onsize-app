@@ -6,7 +6,7 @@
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Grupo SIZE — Controlo Interno — Beta Fecho Anual Reparado</title>
+<title>Grupo SIZE — Controlo Interno — módulos completos</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -434,7 +434,6 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
       <a class="ntab" data-p="retencoes">Retenções</a>
       <a class="ntab" data-p="modelo30">Modelo 30</a>
       <a class="ntab" data-p="independentes">Independentes</a>
-      <a class="ntab" data-p="fecho-anual">Fecho Anual</a>
     </div>
     <div class="nav-group">
       <div class="nav-group-title">Laboral / Estatístico</div>
@@ -459,12 +458,12 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <span class="nuser" id="nuser"></span>
     <span class="nbadge" id="nbadge"></span>
     <button class="nsair" onclick="logout()">Sair</button>
-    <span id="build-badge" class="build-badge">BUILD CLIENTES UNIFICADO + FECHO ANUAL REPARADO 2026-06-17</span>
+    <span id="build-badge" class="build-badge">BUILD BETA + CLIENTES/SERVIÇOS UNIFICADO 2026-06-18</span>
   </div>
 </nav>
 
-<!-- CLIENTES — GESTÃO DE SERVIÇOS -->
-<div class="page on" id="page-clientes">
+<!-- CLIENTES / GESTÃO DE SERVIÇOS -->
+<div class="page" id="page-clientes">
   <div class="tb">
     <span class="tb-title">Clientes</span><span class="tb-count" id="cnt-svc-massa">—</span>
     <div class="srch"><span class="si">🔍</span><input id="src-svc-massa" placeholder="Pesquisar código ou cliente..."></div>
@@ -472,14 +471,13 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <select class="fil" id="fil-svc-massa-est"><option value="Ativo">Clientes ativos</option><option value="">Todos os estados</option><option value="Cessado">Cessados</option><option value="Suspenso">Suspensos</option></select>
     <button class="btn btn-p hide" id="btn-novo-cli" onclick="openCli()">+ Novo cliente</button>
   </div>
-  <div class="bulkbar" id="svc-bulkbar">
+  <div class="bulkbar">
     <label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" id="svc-select-all" onchange="toggleAllSvcRows(this.checked)"> Selecionar todos os resultados</label>
     <span class="bulk-info" id="svc-selected-info">0 selecionados</span>
     <select id="svc-bulk-service"><option value="">Escolher serviço...</option></select>
     <button class="bulk-btn add" onclick="bulkSetService(true)">+ Adicionar</button>
     <button class="bulk-btn remove" onclick="bulkSetService(false)">− Remover</button>
     <button class="bulk-btn save" id="svc-save-btn" onclick="saveServiceMatrix()">Guardar alterações</button>
-    <span id="svc-pending" style="display:none;padding:6px 10px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700">Alterações não guardadas</span>
     <button class="bulk-btn" onclick="resetServiceMatrix()">Repor</button>
   </div>
   <div class="svc-matrix-wrap">
@@ -651,10 +649,6 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
       <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
     </select>
   </div>
-  <div id="sal-month-banner" style="margin:0 0 14px 0;padding:12px 16px;border-radius:10px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 14px rgba(15,23,42,.12)">
-    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#cbd5e1">Mês de trabalho</div>
-    <div id="sal-month-banner-label" style="font-size:20px;font-weight:800;letter-spacing:.02em">—</div>
-  </div>
   <div class="twrap twrap-x">
     <table><thead><tr>
       <th class="sc sc1" style="background:var(--surf2)">Cód.</th>
@@ -696,30 +690,6 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
   </div>
 </div>
 
-
-<!-- FECHO ANUAL -->
-<div class="page" id="page-fecho-anual">
-  <div class="tb">
-    <span class="tb-title">Fecho Anual</span><span class="tb-count" id="cnt-fecho">—</span>
-    <select class="fil" id="fil-fecho-resp"><option value="">Todos os responsáveis</option></select>
-    <select class="fil" id="fil-fecho-estado"><option value="">Todos os estados</option><option value="por_iniciar">Por iniciar</option><option value="em_curso">Em curso</option><option value="fechado">Fechado</option></select>
-    <div class="srch"><span class="si">🔍</span><input id="src-fecho" placeholder="Pesquisar cliente..."></div>
-  </div>
-  <div class="twrap twrap-x">
-    <table>
-      <thead><tr>
-        <th class="sc sc1" style="background:var(--surf2)">Cód.</th>
-        <th class="sc sc2" style="background:var(--surf2)">Cliente</th>
-        <th class="sc sc3" style="background:var(--surf2)">Responsável</th>
-        <th>Responsável de execução</th>
-        <th>Estado</th>
-        <th>Data de fecho</th>
-        <th>Observações</th>
-      </tr></thead>
-      <tbody id="tb-fecho"><tr><td colspan="7"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
-    </table>
-  </div>
-</div>
 
 <!-- CALENDÁRIO FISCAL -->
 <div class="page" id="page-calendario">
@@ -1195,8 +1165,7 @@ function tableToExcelDownload(table, filename, sheetName) {
     table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px}
     th,td{border:1px solid #b8b8b8;padding:5px;white-space:nowrap}
     th{background:#1f4e78;color:#fff;font-weight:700}
-  </style></head><body><table>${clone.innerHTML}</table>
-</body></html>`;
+  </style></head><body><table>${clone.innerHTML}</table></body></html>`;
   const blob = new Blob(['\ufeff', html], {type:'application/vnd.ms-excel;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1475,7 +1444,7 @@ async function changeWorkYear(v){
 async function reloadCurrentPage(){
   const tab=document.querySelector('.ntab.on');
   const p=tab?.dataset?.p||'clientes';
-  if(p==='clientes'){await loadClis();return loadServiceMatrix();}
+  if(p==='clientes')return loadServiceMatrix();
   if(p==='iva-cessadas')return loadIvaCessadas();
   if(p==='iva-tri')return loadIvaTri();
   if(p==='iva-men')return loadIvaMen();
@@ -1484,7 +1453,6 @@ async function reloadCurrentPage(){
   if(p==='retencoes')return loadRetencoes();
   if(p==='modelo30')return loadModelo30();
   if(p==='salarios')return loadSalarios();
-  if(p==='fecho-anual')return loadFechoAnual();
   if(p==='independentes')return loadInd();
   if(p==='calendario')return loadCalendario();
   if(p==='resumo')return loadResumo();
@@ -1588,35 +1556,28 @@ function svcFilteredClients(){
   }).sort((a,b)=>String(a.codigo||'').localeCompare(String(b.codigo||'')));
 }
 async function loadServiceMatrix(){
-  const canEdit=can('editarClientes');
-  const bulkbar=document.getElementById('svc-bulkbar'); if(bulkbar) bulkbar.style.display=canEdit?'flex':'none';
   if(!clis.length) await loadClis();
   svcOriginal=new Map(); svcDraft=new Map(); svcSelected=new Set();
   clis.forEach(c=>{const f=svcClientFlags(c);svcOriginal.set(c.id,{...f});svcDraft.set(c.id,{...f});});
   const bulk=document.getElementById('svc-bulk-service');
-  bulk.innerHTML='<option value="">Escolher serviço...</option>'+SVCS.map(s=>`<option value="${s.k}">${s.l}</option>`).join('');
+  if(bulk) bulk.innerHTML='<option value="">Escolher serviço...</option>'+SVCS.map(s=>`<option value="${s.k}">${s.l}</option>`).join('');
   const respSel=document.getElementById('fil-svc-massa-resp');
   const cur=respSel.value;
   const nomes=[...new Set(clis.map(c=>c.responsavel).filter(Boolean))].sort();
   respSel.innerHTML='<option value="">Todos os responsáveis</option>'+nomes.map(n=>`<option value="${n}">${n}</option>`).join('');respSel.value=cur;
   renderServiceMatrix();
 }
-function updateSvcPending(){
-  const n=svcChangedRows().length;
-  const el=document.getElementById('svc-pending');
-  if(el){el.style.display=n?'inline-flex':'none';el.textContent=n===1?'1 alteração não guardada':`${n} alterações não guardadas`;}
-}
 function renderServiceMatrix(){
   const data=svcFilteredClients();
-  document.getElementById('cnt-svc-massa').textContent=data.length+' clientes';
-  const head=document.getElementById('svc-matrix-head');
   const canEdit=can('editarClientes');
-  head.innerHTML='<th class="sticky-cb">'+(canEdit?'<input type="checkbox" id="svc-page-check" onchange="toggleVisibleSvcRows(this.checked)">':'')+'</th><th class="sticky-code">Cód.</th><th class="sticky-name">Cliente</th><th class="sticky-resp">Responsável</th>'+SVCS.map(s=>`<th><label style="display:flex;flex-direction:column;align-items:center;gap:4px;${canEdit?'cursor:pointer':'cursor:default'}"><input type="checkbox" id="svc-col-${s.k}" ${canEdit?'': 'disabled'} onchange="toggleSvcColumn('${s.k}',this.checked)"><span>${s.l}</span></label></th>`).join('');
+  const cnt=document.getElementById('cnt-svc-massa'); if(cnt) cnt.textContent=data.length+' clientes';
+  const head=document.getElementById('svc-matrix-head');
+  head.innerHTML='<th class="sticky-cb"><input type="checkbox" id="svc-page-check" '+(!canEdit?'disabled':'')+' onchange="toggleVisibleSvcRows(this.checked)"></th><th class="sticky-code">Cód.</th><th class="sticky-name">Cliente</th><th class="sticky-resp">Responsável</th>'+SVCS.map(s=>`<th><label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="svc-col-${s.k}" ${!canEdit?'disabled':''} onchange="toggleSvcColumn('${s.k}',this.checked)"><span>${s.l}</span></label></th>`).join('');
   const tb=document.getElementById('tb-svc-massa');
   if(!data.length){tb.innerHTML=`<tr><td colspan="${4+SVCS.length}"><div class="empty"><div class="empty-t">Nenhum cliente encontrado</div></div></td></tr>`;updateSvcSelectedInfo();return;}
   tb.innerHTML=data.map(c=>{
     const d=svcDraft.get(c.id)||svcClientFlags(c);const o=svcOriginal.get(c.id)||{};
-    return `<tr><td class="sticky-cb">${canEdit?`<input type="checkbox" ${svcSelected.has(c.id)?'checked':''} onchange="toggleSvcRow('${c.id}',this.checked)">`:''}</td><td class="sticky-code" style="font-family:monospace;color:#1d4ed8;font-weight:600">${c.codigo}</td><td class="sticky-name" style="font-weight:500">${c.nome}</td><td class="sticky-resp">${c.responsavel||'—'}</td>${SVCS.map(s=>{const changed=d[s.k]!==o[s.k];return `<td class="${changed?'svc-changed':''}"><input type="checkbox" ${d[s.k]?'checked':''} ${canEdit?'':'disabled'} onchange="setSvcFlag('${c.id}','${s.k}',this.checked)"></td>`}).join('')}</tr>`;
+    return `<tr><td class="sticky-cb"><input type="checkbox" ${!canEdit?'disabled':''} ${svcSelected.has(c.id)?'checked':''} onchange="toggleSvcRow('${c.id}',this.checked)"></td><td class="sticky-code" style="font-family:monospace;color:#1d4ed8;font-weight:600">${c.codigo}</td><td class="sticky-name" style="font-weight:500">${c.nome}</td><td class="sticky-resp">${c.responsavel||'—'}</td>${SVCS.map(s=>{const changed=d[s.k]!==o[s.k];return `<td class="${changed?'svc-changed':''}"><input type="checkbox" ${!canEdit?'disabled':''} ${d[s.k]?'checked':''} onchange="setSvcFlag('${c.id}','${s.k}',this.checked)"></td>`}).join('')}</tr>`;
   }).join('');
   const allVisible=data.length>0&&data.every(c=>svcSelected.has(c.id));
   const pc=document.getElementById('svc-page-check');if(pc)pc.checked=allVisible;
@@ -1629,13 +1590,12 @@ function renderServiceMatrix(){
     cb.title=cb.checked?'Desmarcar este serviço em todos os resultados filtrados':'Marcar este serviço em todos os resultados filtrados';
   });
   updateSvcSelectedInfo();
-  updateSvcPending();
 }
 function toggleSvcRow(id,checked){checked?svcSelected.add(id):svcSelected.delete(id);updateSvcSelectedInfo();}
-function toggleVisibleSvcRows(checked){svcFilteredClients().forEach(c=>checked?svcSelected.add(c.id):svcSelected.delete(c.id));renderServiceMatrix();}
-function toggleAllSvcRows(checked){const data=svcFilteredClients();data.forEach(c=>checked?svcSelected.add(c.id):svcSelected.delete(c.id));renderServiceMatrix();}
+function toggleVisibleSvcRows(checked){if(!can('editarClientes'))return;svcFilteredClients().forEach(c=>checked?svcSelected.add(c.id):svcSelected.delete(c.id));renderServiceMatrix();}
+function toggleAllSvcRows(checked){if(!can('editarClientes'))return;const data=svcFilteredClients();data.forEach(c=>checked?svcSelected.add(c.id):svcSelected.delete(c.id));renderServiceMatrix();}
 function toggleSvcColumn(key,checked){
-  if(!can('editarClientes')) return;
+  if(!can('editarClientes')){toast('Sem permissão para alterar serviços','err');return;}
   const data=svcFilteredClients();
   if(!data.length){toast('Não existem clientes nos filtros atuais','inf');return;}
   data.forEach(c=>{
@@ -1645,7 +1605,7 @@ function toggleSvcColumn(key,checked){
     svcDraft.set(c.id,d);
   });
   renderServiceMatrix();
-  toast(`${checked?'Preparado para adicionar':'Preparado para remover'} ${SVCS.find(s=>s.k===key)?.l||'serviço'} em ${data.length} cliente${data.length===1?'':'s'}. Nada foi gravado ainda.`,'inf');
+  toast(`${checked?'Adicionado':'Removido'} ${SVCS.find(s=>s.k===key)?.l||'serviço'} em ${data.length} cliente${data.length===1?'':'s'}. Clica em Guardar alterações para confirmar.`,'inf');
 }
 function updateSvcSelectedInfo(){document.getElementById('svc-selected-info').textContent=svcSelected.size+' selecionado'+(svcSelected.size===1?'':'s');}
 function enforceIvaExclusive(flags, changedKey){
@@ -1654,7 +1614,7 @@ function enforceIvaExclusive(flags, changedKey){
   return flags;
 }
 function setSvcFlag(id,key,val){
-  if(!can('editarClientes')) return;
+  if(!can('editarClientes')){toast('Sem permissão para alterar serviços','err');return;}
   const d={...(svcDraft.get(id)||{})};
   d[key]=!!val;
   enforceIvaExclusive(d,key);
@@ -1662,7 +1622,7 @@ function setSvcFlag(id,key,val){
   renderServiceMatrix();
 }
 function bulkSetService(val){
-  if(!can('editarClientes')) return;
+  if(!can('editarClientes')){toast('Sem permissão para alterar serviços','err');return;}
   const key=document.getElementById('svc-bulk-service').value;
   if(!key){toast('Escolhe primeiro um serviço','inf');return;}
   if(!svcSelected.size){toast('Seleciona pelo menos um cliente','inf');return;}
@@ -1676,7 +1636,7 @@ function bulkSetService(val){
 }
 function svcChangedRows(){const out=[];svcDraft.forEach((d,id)=>{const o=svcOriginal.get(id)||{};const patch={};SVCS.forEach(s=>{if(!!d[s.k]!==!!o[s.k])patch[s.k]=!!d[s.k];});if(Object.keys(patch).length)out.push({id,patch});});return out;}
 async function saveServiceMatrix(){
-  if(!can('editarClientes')){toast('Sem permissão para alterar serviços','err');return;}
+  if(!can('editarClientes')){toast('Sem permissão para guardar alterações','err');return;}
   const conflitos=[];
   svcDraft.forEach((d,id)=>{if(d.tem_iva_mensal&&d.tem_iva_trimestral){const c=clis.find(x=>x.id===id);conflitos.push(c?.nome||id);}});
   if(conflitos.length){toast('Não é possível guardar: existem clientes com IVA Mensal e IVA Trimestral em simultâneo.','err');return;}
@@ -1690,7 +1650,7 @@ async function saveServiceMatrix(){
   else toast(`${ok} cliente${ok===1?' atualizado':'s atualizados'}`);
   await loadClis();await loadServiceMatrix();
 }
-function resetServiceMatrix(){svcDraft=new Map();svcOriginal.forEach((v,k)=>svcDraft.set(k,{...v}));svcSelected.clear();renderServiceMatrix();toast('Alterações não guardadas foram repostas','inf');}
+function resetServiceMatrix(){if(!can('editarClientes'))return;svcDraft=new Map();svcOriginal.forEach((v,k)=>svcDraft.set(k,{...v}));svcSelected.clear();renderServiceMatrix();toast('Alterações não guardadas foram repostas','inf');}
 ['src-svc-massa','fil-svc-massa-resp','fil-svc-massa-est'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',renderServiceMatrix);el.addEventListener('change',renderServiceMatrix);}});
 
 // ══════════════════════════════════════════════════════════
@@ -1700,8 +1660,8 @@ async function loadClis() {
   const {data,error} = await sb.from('clientes').select('*').order('codigo');
   if (error) { toast('Erro: '+error.message,'err'); return; }
   clis = data || [];
-  document.getElementById('cnt-cli').textContent = clis.filter(c=>c.estado==='Ativo').length+' activos';
-  renderClis();
+  const cntCli=document.getElementById('cnt-cli'); if(cntCli) cntCli.textContent = clis.filter(c=>c.estado==='Ativo').length+' activos';
+  if(document.getElementById('tb-cli')) renderClis();
 }
 
 function filteredClis() {
@@ -2455,15 +2415,7 @@ function loadModelo30(){return loadFiscalMensal('modelo30');}
 // ══════════════════════════════════════════════════════════
 // SALÁRIOS
 // ══════════════════════════════════════════════════════════
-function updateSalaryMonthBanner(){
-  const sel=document.getElementById('fil-sal-mes');
-  const label=document.getElementById('sal-month-banner-label');
-  if(!sel||!label)return;
-  const nome=sel.options[sel.selectedIndex]?.text||'';
-  label.textContent=`${nome.toUpperCase()} ${ANO}`;
-}
 async function loadSalarios() {
-  updateSalaryMonthBanner();
   const mes=parseInt(document.getElementById('fil-sal-mes').value);
   const resp=document.getElementById('fil-sal-resp').value;
   const {data:cl}=await sb.from('clientes').select('id,codigo,nome,responsavel').eq('tem_salarios',true).eq('estado','Ativo').order('codigo');
@@ -2983,133 +2935,6 @@ async function delResp(){
 // ══════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════
-// FECHO ANUAL
-// ══════════════════════════════════════════════════════════
-let fechoLoadSeq=0;
-
-function fechoTimeout(promise,ms=8000){
-  return Promise.race([
-    promise,
-    new Promise((_,reject)=>setTimeout(()=>reject(new Error('Tempo excedido ao consultar o Fecho Anual')),ms))
-  ]);
-}
-
-function renderFechoAnualTable(allClients,registos=[],warning=''){
-  const tb=document.getElementById('tb-fecho');
-  if(!tb)return;
-  const resp=String(document.getElementById('fil-fecho-resp')?.value||'').trim();
-  const estado=String(document.getElementById('fil-fecho-estado')?.value||'').trim();
-  const q=(document.getElementById('src-fecho')?.value||'').trim().toLowerCase();
-  const map={};
-  (registos||[]).forEach(r=>{ if(r?.cliente_id!=null) map[String(r.cliente_id)]=r; });
-
-  const respSel=document.getElementById('fil-fecho-resp');
-  if(respSel){
-    const cur=respSel.value;
-    const nomes=[...new Set((allClients||[]).map(c=>c.responsavel).filter(Boolean))].sort();
-    respSel.innerHTML='<option value="">Todos os responsáveis</option>'+nomes.map(n=>`<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
-    respSel.value=cur;
-  }
-
-  const data=(allClients||[]).filter(c=>{
-    const r=map[String(c.id)]||{};
-    if(resp&&c.responsavel!==resp)return false;
-    if(estado&&(r.estado||'por_iniciar')!==estado)return false;
-    if(q&&!`${c.codigo||''} ${c.nome||''}`.toLowerCase().includes(q))return false;
-    return true;
-  });
-
-  const cnt=document.getElementById('cnt-fecho');
-  if(cnt)cnt.textContent=data.length;
-  if(!data.length){
-    tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-t">Sem clientes para os filtros selecionados</div>${warning?`<div style="margin-top:6px;color:#b45309">${escHtml(warning)}</div>`:''}</div></td></tr>`;
-    return;
-  }
-
-  const edit=!isFiscalYearClosed();
-  const warnRow=warning?`<tr><td colspan="7" style="background:#fffbeb;color:#92400e;font-size:11px;padding:8px 12px;border-bottom:1px solid #fde68a">Os clientes foram carregados, mas os registos do Fecho Anual não puderam ser lidos: ${escHtml(warning)}</td></tr>`:'';
-  tb.innerHTML=warnRow+data.map((c,i)=>{
-    const r=map[String(c.id)]||{};
-    const st=r.estado||'por_iniciar';
-    const stLabel=st==='fechado'?'Fechado':st==='em_curso'?'Em curso':'Por iniciar';
-    const stBg=st==='fechado'?'#dcfce7':st==='em_curso'?'#fef3c7':'#fee2e2';
-    const safeId=String(c.id).replace(/'/g,'&#39;');
-    const safeResp=String(r.resp_execucao||'').replace(/'/g,'&#39;');
-    const safeDate=String(r.data_fecho||'').replace(/'/g,'&#39;');
-    const safeObs=String(r.obs||'').replace(/'/g,'&#39;');
-    return `<tr>
-      <td class="sc sc1" style="background:${rowBg(i)};font-family:monospace;color:#1d4ed8;font-weight:600">${escHtml(c.codigo||'')}</td>
-      <td class="sc sc2" style="background:${rowBg(i)};font-weight:600">${escHtml(c.nome||'')}</td>
-      <td class="sc sc3" style="background:${rowBg(i)}">${escHtml(c.responsavel||'')}</td>
-      <td ${edit?`onclick="editFechoResp(this,'${safeId}','${safeResp}')"`:''} style="cursor:${edit?'pointer':'default'}">${escHtml(r.resp_execucao||'')}</td>
-      <td ${edit?`onclick="editFechoEstado(this,'${safeId}','${st}')"`:''} style="background:${stBg};text-align:center;font-weight:700;cursor:${edit?'pointer':'default'}">${stLabel}</td>
-      <td ${edit?`onclick="editFechoDate(this,'${safeId}','${safeDate}')"`:''} style="text-align:center;cursor:${edit?'pointer':'default'}">${escHtml(r.data_fecho||'')}</td>
-      <td ${edit?`onclick="editFechoObs(this,'${safeId}','${safeObs}')"`:''} style="cursor:${edit?'pointer':'default'}">${escHtml(r.obs||'')}</td>
-    </tr>`;
-  }).join('');
-}
-
-async function loadFechoAnual(){
-  const loadSeq=++fechoLoadSeq;
-  const tb=document.getElementById('tb-fecho');
-  if(tb)tb.innerHTML='<tr><td colspan="7"><div class="loading"><div class="spin"></div><span>A carregar clientes…</span></div></td></tr>';
-
-  let cl=[];
-  try{
-    const result=await fechoTimeout(
-      sb.from('clientes').select('id,codigo,nome,responsavel').eq('tem_fecho',true).eq('estado','Ativo').order('codigo'),
-      8000
-    );
-    if(loadSeq!==fechoLoadSeq)return;
-    if(result.error)throw result.error;
-    cl=result.data||[];
-  }catch(err){
-    if(loadSeq!==fechoLoadSeq)return;
-    if(tb)tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-t">Erro ao carregar clientes</div><div style="margin-top:6px;color:#b91c1c">${escHtml(err.message||String(err))}</div></div></td></tr>`;
-    toast('Erro Fecho Anual: '+(err.message||err),'err');
-    return;
-  }
-
-  // Mostra imediatamente os clientes, mesmo antes de consultar a tabela de fecho.
-  renderFechoAnualTable(cl,[],'');
-
-  let registos=[];
-  let warning='';
-  try{
-    const result=await fechoTimeout(
-      sb.from('fecho_anual').select('cliente_id,ano,resp_execucao,estado,data_fecho,obs').eq('ano',Number(ANO)),
-      8000
-    );
-    if(loadSeq!==fechoLoadSeq)return;
-    if(result.error)throw result.error;
-    registos=result.data||[];
-  }catch(err){
-    warning=err.message||String(err);
-    console.error('Fecho Anual:',err);
-  }
-  if(loadSeq!==fechoLoadSeq)return;
-  renderFechoAnualTable(cl,registos,warning);
-}
-
-async function saveFecho(cid,data){
-  try{
-    await upsert('fecho_anual',{cliente_id:cid,ano:Number(ANO)},data);
-    toast('Guardado');
-    await loadFechoAnual();
-  }catch(err){
-    console.error('Erro ao guardar Fecho Anual:',err);
-    toast('Erro ao guardar Fecho Anual: '+(err.message||err),'err');
-  }
-}
-function editFechoResp(td,cid,val){const opts=responsavelOptions();editSel(td,val,opts,async nv=>saveFecho(cid,{resp_execucao:nv||null}));}
-function editFechoEstado(td,cid,val){editSel(td,val,[{v:'por_iniciar',l:'Por iniciar'},{v:'em_curso',l:'Em curso'},{v:'fechado',l:'Fechado'}],async nv=>saveFecho(cid,{estado:nv||'por_iniciar'}));}
-function editFechoDate(td,cid,val){editDate(td,val,async nv=>saveFecho(cid,{data_fecho:nv||null}));}
-function editFechoObs(td,cid,val){editTxt(td,val,async nv=>saveFecho(cid,{obs:nv||null}));}
-['fil-fecho-resp','fil-fecho-estado'].forEach(id=>document.getElementById(id)?.addEventListener('change',loadFechoAnual));
-let fechoSearchTimer=null;
-document.getElementById('src-fecho')?.addEventListener('input',()=>{clearTimeout(fechoSearchTimer);fechoSearchTimer=setTimeout(loadFechoAnual,250);});
-
-// ══════════════════════════════════════════════════════════
 // CALENDÁRIO FISCAL
 // ══════════════════════════════════════════════════════════
 function isAdminUser(){ return String(user?.nivel||'').trim().toLowerCase()==='administrador'; }
@@ -3271,7 +3096,7 @@ document.querySelectorAll('.ntab').forEach(tab=>{
     document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));
     tab.classList.add('on');
     document.getElementById('page-'+p).classList.add('on');
-    if(p==='clientes'){await loadClis();await loadServiceMatrix();}
+    if(p==='clientes')await loadServiceMatrix();
     if(p==='iva-cessadas')await loadIvaCessadas();
     if(p==='iva-tri')await loadIvaTri();
     if(p==='iva-men')await loadIvaMen();
@@ -3280,7 +3105,6 @@ document.querySelectorAll('.ntab').forEach(tab=>{
     if(p==='retencoes')await loadRetencoes();
     if(p==='modelo30')await loadModelo30();
     if(p==='salarios')await loadSalarios();
-    if(p==='fecho-anual')await loadFechoAnual();
     if(p==='independentes')await loadInd();
     if(p==='calendario')await loadCalendario();
     if(p==='resumo')await loadResumo();
@@ -3306,36 +3130,5 @@ window.addEventListener('unhandledrejection', event => {
 
 initLogin();
 </script>
-
-<script>
-(function(){
-  async function recoverLoginUsers(){
-    const sel=document.getElementById('lsel');
-    if(!sel) return;
-    try{
-      const fallback=(typeof FALLBACK!=='undefined' && Array.isArray(FALLBACK))?FALLBACK:[];
-      if(!sel.options.length || sel.options.length<=1){
-        sel.innerHTML='<option value="">— Seleccionar —</option>';
-        fallback.forEach(r=>sel.add(new Option(r.nome,String(r.id))));
-        if(typeof resps!=='undefined') resps=fallback.slice();
-      }
-      if(typeof sb!=='undefined' && sb){
-        const result=await sb.from('responsaveis').select('*').eq('estado','Ativo').order('nome');
-        if(!result.error && Array.isArray(result.data) && result.data.length){
-          if(typeof resps!=='undefined') resps=result.data;
-          sel.innerHTML='<option value="">— Seleccionar —</option>';
-          result.data.forEach(r=>sel.add(new Option(r.nome,String(r.id))));
-        }
-      }
-    }catch(err){
-      console.error('Falha ao carregar utilizadores do login:',err);
-    }
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',recoverLoginUsers,{once:true});
-  else recoverLoginUsers();
-  setTimeout(recoverLoginUsers,800);
-})();
-</script>
-
 </body>
 </html>
