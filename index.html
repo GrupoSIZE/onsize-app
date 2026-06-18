@@ -1475,7 +1475,7 @@ async function auditedDirectDelete(table,id,clienteId=null){
 
 // ── Guardar no Supabase ───────────────────────────────────
 async function upsert(table, match, data) {
-  const YEAR_LOCKED_TABLES=new Set(['iva_trimestral','iva_mensal','cope','saft','retencoes','modelo30','modelo10','relatorio_unico','faturacao_rendas','fecho','salarios','independentes','calendario_fiscal','ferias_pedidos','ferias_saldos','ferias_periodos_criticos']);
+  const YEAR_LOCKED_TABLES=new Set(['iva_trimestral','iva_mensal','cope','saft','retencoes','modelo30','modelo10','relatorio_unico','faturacao_rendas','fecho','salarios','independentes','calendario_fiscal']);
   if(YEAR_LOCKED_TABLES.has(table)) assertYearOpen();
 
   const {data:rows,error:readErr}=await sb.from(table).select('*').match(match).limit(1);
@@ -3118,7 +3118,13 @@ function feriasSaldo(nome){
   const pend=FERIAS_PEDIDOS.filter(p=>p.responsavel_nome===nome&&p.estado==='Pedido').reduce((a,p)=>a+Number(p.dias_uteis||0),0);
   return {direito,trans,ajustes,total:direito+trans+ajustes,aprov,pend,livre:direito+trans+ajustes-aprov};
 }
-function feriasCurrentUsers(){return resps.filter(r=>String(r.estado||'Ativo')==='Ativo').map(r=>r.nome).filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt'));}
+function feriasCurrentUsers(){
+  const names=[];
+  try{(resps||[]).filter(r=>String(r.estado||'Ativo')==='Ativo').forEach(r=>{if(r.nome)names.push(r.nome);});}catch(e){}
+  try{(FALLBACK||[]).filter(r=>String(r.estado||'Ativo')==='Ativo').forEach(r=>{if(r.nome)names.push(r.nome);});}catch(e){}
+  if(user?.nome)names.push(user.nome);
+  return [...new Set(names.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'));
+}
 async function loadFerias(){
   const anoSel=document.getElementById('fil-ferias-ano'); if(anoSel){anoSel.innerHTML=(FISCAL_YEARS||[{ano:ANO}]).map(y=>`<option value="${y.ano}" ${Number(y.ano)===Number(ANO)?'selected':''}>${y.ano}</option>`).join('');}
   const table=document.getElementById('ferias-map'); if(table)table.innerHTML='<tbody><tr><td><div class="loading"><div class="spin"></div> A carregar férias...</div></td></tr></tbody>';
@@ -3180,11 +3186,29 @@ function renderFeriasPedidos(){
 }
 function badgeEstadoFerias(e){if(e==='Aprovado')return '<span class="badge bg">Aprovado</span>';if(e==='Rejeitado')return '<span class="badge br">Rejeitado</span>';return '<span class="badge ba">Pedido</span>';}
 function openFeriasPedido(){
-  const sel=document.getElementById('ferias-resp');const opts=feriasCurrentUsers().map(n=>`<option value="${escapeHtml(n)}" ${n===user?.nome?'selected':''}>${escapeHtml(n)}</option>`).join('');sel.innerHTML=opts;
-  if(!isAdminUser()){sel.value=user.nome;sel.disabled=true;}else sel.disabled=false;
-  document.getElementById('ferias-tipo').value='Férias';document.getElementById('ferias-inicio').value='';document.getElementById('ferias-fim').value='';document.getElementById('ferias-obs').value='';document.getElementById('ferias-preview').innerHTML='';
-  document.getElementById('mferias').classList.add('on');
-  ['ferias-resp','ferias-inicio','ferias-fim'].forEach(id=>document.getElementById(id).onchange=previewFeriasPedido);
+  const modal=document.getElementById('mferias');
+  const sel=document.getElementById('ferias-resp');
+  if(!modal||!sel){toast('Erro: janela de pedido de férias não encontrada','err');return;}
+  const nomes=feriasCurrentUsers();
+  const selectedName=user?.nome||nomes[0]||'';
+  sel.innerHTML=nomes.length
+    ? nomes.map(n=>`<option value="${escapeHtml(n)}" ${n===selectedName?'selected':''}>${escapeHtml(n)}</option>`).join('')
+    : `<option value="${escapeHtml(selectedName)}">${escapeHtml(selectedName||'Utilizador')}</option>`;
+  if(!isAdminUser()){
+    if(user?.nome&&!nomes.includes(user.nome)){sel.innerHTML=`<option value="${escapeHtml(user.nome)}">${escapeHtml(user.nome)}</option>`;}
+    sel.value=user?.nome||selectedName;
+    sel.disabled=true;
+  }else{
+    sel.disabled=false;
+    sel.value=selectedName;
+  }
+  document.getElementById('ferias-tipo').value='Férias';
+  document.getElementById('ferias-inicio').value='';
+  document.getElementById('ferias-fim').value='';
+  document.getElementById('ferias-obs').value='';
+  document.getElementById('ferias-preview').innerHTML='';
+  ['ferias-resp','ferias-inicio','ferias-fim'].forEach(id=>{const el=document.getElementById(id);if(el)el.onchange=previewFeriasPedido;});
+  modal.classList.add('on');
 }
 function closeFeriasPedido(){document.getElementById('mferias').classList.remove('on');}
 function previewFeriasPedido(){
@@ -3195,26 +3219,43 @@ function previewFeriasPedido(){
   document.getElementById('ferias-preview').innerHTML=html;
 }
 async function saveFeriasPedido(){
-  try{assertYearOpen();}catch(e){toast(e.message,'err');return;}
-  const nome=document.getElementById('ferias-resp').value,ini=document.getElementById('ferias-inicio').value,fim=document.getElementById('ferias-fim').value,tipo=document.getElementById('ferias-tipo').value,obs=document.getElementById('ferias-obs').value;
-  if(!nome||!ini||!fim){toast('Preenche colaborador e datas','err');return;}if(fim<ini){toast('Data fim anterior à data início','err');return;}
+  const nome=(document.getElementById('ferias-resp')?.value||user?.nome||'').trim();
+  const ini=document.getElementById('ferias-inicio')?.value||'';
+  const fim=document.getElementById('ferias-fim')?.value||'';
+  const tipo=document.getElementById('ferias-tipo')?.value||'Férias';
+  const obs=document.getElementById('ferias-obs')?.value||'';
+  if(!nome||!ini||!fim){toast('Preenche colaborador e datas','err');return;}
+  if(fim<ini){toast('Data fim anterior à data início','err');return;}
   const dias=feriasBusinessDays(ini,fim);if(dias<=0){toast('O período não tem dias úteis','err');return;}
   const sal=feriasSaldo(nome);if(sal.livre-dias<0){toast('Pedido excede o saldo disponível','err');return;}
-  if(!isAdminUser()&&nome!==user.nome){toast('Só podes pedir férias para ti','err');return;}
-  const payload={ano:Number(document.getElementById('fil-ferias-ano')?.value||ANO),responsavel_nome:nome,data_inicio:ini,data_fim:fim,dias_uteis:dias,tipo,estado:'Pedido',observacoes:obs||null,criado_por:user?.nome||null};
-  const {error}=await sb.from('ferias_pedidos').insert(payload);if(error){toast('Erro: '+error.message,'err');return;}toast('Pedido submetido');closeFeriasPedido();await loadFerias();
+  if(!isAdminUser()&&nome!==user?.nome){toast('Só podes pedir férias para ti','err');return;}
+  const payload={ano:Number(document.getElementById('fil-ferias-ano')?.value||ANO||2026),responsavel_nome:nome,data_inicio:ini,data_fim:fim,dias_uteis:dias,tipo,estado:'Pedido',observacoes:obs||null,criado_por:user?.nome||null,updated_by:user?.nome||null};
+  const {error}=await sb.from('ferias_pedidos').insert(payload);
+  if(error){toast('Erro ao gravar férias: '+error.message,'err');document.getElementById('ferias-preview').innerHTML=`<div class="ferias-alert" style="background:#fef2f2;border-color:#fecaca;color:#991b1b"><b>Erro ao gravar:</b> ${escapeHtml(error.message)}</div>`;return;}
+  toast('Pedido submetido');closeFeriasPedido();await loadFerias();
 }
-async function decidirFerias(id,estado){if(!isAdminUser())return;try{assertYearOpen();}catch(e){toast(e.message,'err');return;}const payload={estado,aprovado_por:user.nome,aprovado_em:new Date().toISOString()};const {error}=await sb.from('ferias_pedidos').update(payload).eq('id',id);if(error){toast('Erro: '+error.message,'err');return;}toast('Pedido '+estado.toLowerCase());await loadFerias();}
-async function deleteFeriasPedido(id){try{assertYearOpen();}catch(e){toast(e.message,'err');return;}if(!confirm('Eliminar pedido?'))return;const {error}=await sb.from('ferias_pedidos').delete().eq('id',id);if(error){toast('Erro: '+error.message,'err');return;}toast('Pedido eliminado');await loadFerias();}
+async function decidirFerias(id,estado){if(!isAdminUser())return;const payload={estado,aprovado_por:user.nome,aprovado_em:new Date().toISOString()};const {error}=await sb.from('ferias_pedidos').update(payload).eq('id',id);if(error){toast('Erro: '+error.message,'err');return;}toast('Pedido '+estado.toLowerCase());await loadFerias();}
+async function deleteFeriasPedido(id){if(!confirm('Eliminar pedido?'))return;const {error}=await sb.from('ferias_pedidos').delete().eq('id',id);if(error){toast('Erro: '+error.message,'err');return;}toast('Pedido eliminado');await loadFerias();}
 function openFeriasCritico(){if(!isAdminUser())return;document.getElementById('crit-inicio').value='';document.getElementById('crit-fim').value='';document.getElementById('crit-desc').value='';document.getElementById('crit-nivel').value='aviso';document.getElementById('mferiascritico').classList.add('on');}
 function closeFeriasCritico(){document.getElementById('mferiascritico').classList.remove('on');}
-async function saveFeriasCritico(){try{assertYearOpen();}catch(e){toast(e.message,'err');return;}const ini=document.getElementById('crit-inicio').value,fim=document.getElementById('crit-fim').value,desc=document.getElementById('crit-desc').value,nivel=document.getElementById('crit-nivel').value;if(!ini||!fim||!desc){toast('Preenche datas e descrição','err');return;}const {error}=await sb.from('ferias_periodos_criticos').insert({ano:Number(document.getElementById('fil-ferias-ano')?.value||ANO),data_inicio:ini,data_fim:fim,descricao:desc,nivel,criado_por:user?.nome||null});if(error){toast('Erro: '+error.message,'err');return;}toast('Período crítico criado');closeFeriasCritico();await loadFerias();}
+async function saveFeriasCritico(){const ini=document.getElementById('crit-inicio').value,fim=document.getElementById('crit-fim').value,desc=document.getElementById('crit-desc').value,nivel=document.getElementById('crit-nivel').value;if(!ini||!fim||!desc){toast('Preenche datas e descrição','err');return;}const {error}=await sb.from('ferias_periodos_criticos').insert({ano:Number(document.getElementById('fil-ferias-ano')?.value||ANO),data_inicio:ini,data_fim:fim,descricao:desc,nivel,criado_por:user?.nome||null});if(error){toast('Erro: '+error.message,'err');return;}toast('Período crítico criado');closeFeriasCritico();await loadFerias();}
 function openFeriasSaldos(){if(!isAdminUser())return;const body=document.getElementById('ferias-saldos-body');body.innerHTML=`<table><thead><tr><th>Colaborador</th><th>Direito anual</th><th>Transitados</th><th>Ajustes</th><th>Aprovados</th><th>Livres</th></tr></thead><tbody>${feriasCurrentUsers().map(n=>{const s=feriasSaldo(n);return `<tr data-nome="${escapeHtml(n)}"><td>${escapeHtml(n)}</td><td><input type="number" class="fd" value="${s.direito}" style="width:80px"></td><td><input type="number" class="ft" value="${s.trans}" style="width:80px"></td><td><input type="number" class="fa" value="${s.ajustes}" style="width:80px"></td><td>${s.aprov}</td><td>${s.livre}</td></tr>`;}).join('')}</tbody></table>`;document.getElementById('mferiassaldos').classList.add('on');}
 function closeFeriasSaldos(){document.getElementById('mferiassaldos').classList.remove('on');}
-async function saveFeriasSaldos(){try{assertYearOpen();}catch(e){toast(e.message,'err');return;}const rows=[...document.querySelectorAll('#ferias-saldos-body tbody tr')];const ano=Number(document.getElementById('fil-ferias-ano')?.value||ANO);for(const tr of rows){const nome=tr.dataset.nome;const direito=Number(tr.querySelector('.fd').value||22),trans=Number(tr.querySelector('.ft').value||0),aj=Number(tr.querySelector('.fa').value||0);const {error}=await sb.from('ferias_saldos').upsert({ano,responsavel_nome:nome,direito_anual:direito,dias_transitados:trans,ajustes:aj,updated_by:user?.nome||null},{onConflict:'ano,responsavel_nome'});if(error){toast('Erro: '+error.message,'err');return;}}toast('Saldos guardados');closeFeriasSaldos();await loadFerias();}
+async function saveFeriasSaldos(){const rows=[...document.querySelectorAll('#ferias-saldos-body tbody tr')];const ano=Number(document.getElementById('fil-ferias-ano')?.value||ANO);for(const tr of rows){const nome=tr.dataset.nome;const direito=Number(tr.querySelector('.fd').value||22),trans=Number(tr.querySelector('.ft').value||0),aj=Number(tr.querySelector('.fa').value||0);const {error}=await sb.from('ferias_saldos').upsert({ano,responsavel_nome:nome,direito_anual:direito,dias_transitados:trans,ajustes:aj,updated_by:user?.nome||null},{onConflict:'ano,responsavel_nome'});if(error){toast('Erro: '+error.message,'err');return;}}toast('Saldos guardados');closeFeriasSaldos();await loadFerias();}
 document.getElementById('fil-ferias-ano')?.addEventListener('change',loadFerias);
 document.getElementById('fil-ferias-estado')?.addEventListener('change',renderFerias);
 document.getElementById('src-ferias')?.addEventListener('input',renderFerias);
+
+
+window.openFeriasPedido=openFeriasPedido;
+window.closeFeriasPedido=closeFeriasPedido;
+window.saveFeriasPedido=saveFeriasPedido;
+window.openFeriasSaldos=openFeriasSaldos;
+window.closeFeriasSaldos=closeFeriasSaldos;
+window.saveFeriasSaldos=saveFeriasSaldos;
+window.openFeriasCritico=openFeriasCritico;
+window.closeFeriasCritico=closeFeriasCritico;
+window.saveFeriasCritico=saveFeriasCritico;
 
 
 // ══════════════════════════════════════════════════════════
