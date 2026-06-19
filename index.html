@@ -459,6 +459,40 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
 .ferias-actions{display:flex;gap:6px;justify-content:center}.ferias-small{font-size:10px;color:#64748b}.ferias-modal-error{color:#b91c1c;font-size:12px;margin-top:8px;min-height:16px}
 @media(max-width:900px){.ferias-kpis{grid-template-columns:1fr 1fr}.ferias-map-wrap{max-height:420px}}
 
+
+
+/* FIX FINAL IVA Mensal — evitar sobreposição do cabeçalho */
+#page-iva-men .tb{
+  position:static!important;
+  top:auto!important;
+  z-index:auto!important;
+  background:var(--bg)!important;
+  padding-top:0!important;
+  padding-bottom:10px!important;
+  border-bottom:1px solid var(--bdr)!important;
+  box-shadow:none!important;
+}
+#page-iva-men .tb::after{display:none!important}
+#page-iva-men .twrap{
+  position:relative!important;
+  z-index:1!important;
+  overflow:auto!important;
+  max-height:calc(100vh - 165px)!important;
+}
+#page-iva-men table{border-collapse:separate!important;border-spacing:0!important}
+#page-iva-men thead th{
+  position:sticky!important;
+  top:0!important;
+  z-index:120!important;
+  background:var(--surf2)!important;
+  box-shadow:0 1px 0 var(--bdr),0 4px 8px rgba(248,247,243,.92)!important;
+}
+#page-iva-men thead th.sc{z-index:160!important;background:var(--surf2)!important}
+#page-iva-men tbody td.sc{z-index:30!important;background:inherit!important}
+#page-iva-men tbody tr:hover td.sc{background:#fafaf9!important}
+#page-iva-men tbody tr.row-a td.sc{background:var(--red-l)!important}
+#page-iva-men tbody tr.row-ok td.sc{background:var(--green-l)!important}
+
 </style>
 </head>
 <body>
