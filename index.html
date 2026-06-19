@@ -2617,24 +2617,46 @@ async function loadAnualModule(key){
   const cfg=ANUAL_MODULES[key]; if(!cfg)return;
   const tb=document.getElementById(cfg.tbody); const th=document.getElementById(cfg.thead);
   if(tb)tb.innerHTML='<tr><td colspan="99"><div class="loading"><div class="spin"></div> A carregar...</div></td></tr>';
-  const {data:cl,error:e1}=await sb.from('clientes').select('id,codigo,nome,responsavel').eq(cfg.flag,true).eq('estado','Ativo').order('codigo');
-  const {data:rg,error:e2}=await sb.from(cfg.table).select('*').eq('ano',ANO);
-  if(e1||e2){ if(tb)tb.innerHTML=`<tr><td colspan="99"><div class="empty"><div class="empty-t">Erro ao carregar</div><div>${escapeHtml((e1||e2).message)}</div></div></td></tr>`; toast('Erro: '+(e1||e2).message,'err'); return; }
+  if(th)th.innerHTML='<tr><th class="sc sc1">Cód.</th><th class="sc sc2">Cliente</th><th class="sc sc3">Responsável</th>'+cfg.fields.map(([f,l])=>`<th>${l}</th>`).join('')+'</tr>';
+
+  let cl=[], rg=[], e1=null, e2=null;
+  try{
+    const r1=await sb.from('clientes').select('id,codigo,nome,responsavel').eq(cfg.flag,true).eq('estado','Ativo').order('codigo');
+    cl=r1.data||[]; e1=r1.error||null;
+  }catch(err){ e1=err; }
+  try{
+    const r2=await sb.from(cfg.table).select('*').eq('ano',ANO);
+    rg=r2.data||[]; e2=r2.error||null;
+  }catch(err){ e2=err; }
+
+  if(e1){
+    if(tb)tb.innerHTML=`<tr><td colspan="99"><div class="empty"><div class="empty-t">Erro ao carregar clientes</div><div>${escapeHtml(e1.message||String(e1))}</div></div></td></tr>`;
+    toast('Erro clientes: '+(e1.message||String(e1)),'err');
+    return;
+  }
+
+  // Se a tabela operacional ainda estiver vazia/incompleta, não bloqueia a lista de clientes.
+  // Mostra os clientes e permite testar depois de corrigir SQL/RLS.
+  if(e2){
+    console.warn('Erro tabela anual', cfg.table, e2);
+    rg=[];
+    toast('Atenção '+cfg.table+': '+(e2.message||String(e2)),'err');
+  }
+
   const q=(document.getElementById(cfg.src)?.value||'').toLowerCase();
   const fr=document.getElementById(cfg.resp)?.value||'';
   const fe=cfg.estado?(document.getElementById(cfg.estado)?.value||''):'';
-  const clientes=(cl||[]).filter(c=>(!fr||c.responsavel===fr)&&(!q||c.codigo.toLowerCase().includes(q)||c.nome.toLowerCase().includes(q)));
-  const map={};(rg||[]).forEach(r=>map[r.cliente_id]=r);
+  const clientes=(cl||[]).filter(c=>(!fr||c.responsavel===fr)&&(!q||(c.codigo||'').toLowerCase().includes(q)||(c.nome||'').toLowerCase().includes(q)));
+  const map={};(rg||[]).forEach(r=>{ if(r && r.cliente_id) map[r.cliente_id]=r; });
   const filtered=fe?clientes.filter(c=>(map[c.id]?.estado||'A lançar')===fe):clientes;
-  document.getElementById(cfg.cnt).textContent=filtered.length;
-  th.innerHTML='<tr><th class="sc sc1">Cód.</th><th class="sc sc2">Cliente</th><th class="sc sc3">Responsável</th>'+cfg.fields.map(([f,l])=>`<th>${l}</th>`).join('')+'</tr>';
+  const cntEl=document.getElementById(cfg.cnt); if(cntEl)cntEl.textContent=filtered.length;
   const edit=can('editar');
-  if(!filtered.length){tb.innerHTML=`<tr><td colspan="${cfg.fields.length+3}"><div class="empty"><div class="empty-t">${cfg.empty}</div></div></td></tr>`;return;}
+  if(!filtered.length){tb.innerHTML=`<tr><td colspan="${cfg.fields.length+3}"><div class="empty"><div class="empty-t">${cfg.empty}</div>${e2?`<div style="margin-top:8px;color:#b91c1c">Erro tabela: ${escapeHtml(e2.message||String(e2))}</div>`:''}</div></td></tr>`;return;}
   tb.innerHTML=filtered.map((c,ri)=>{const r=map[c.id]||{};const bg=rowBg(ri);let cells='';
     for(const [field,label,type] of cfg.fields){const v=r[field]??'';const shown=displayAnualValue(v,type);const safe=String(v).replace(/'/g,'&#39;');
       cells += edit?`<td style="text-align:center;cursor:pointer" onclick="anualEdit(this,'${key}','${c.id}','${field}','${safe}','${type}')">${escapeHtml(shown)}</td>`:`<td style="text-align:center">${escapeHtml(shown)}</td>`;
     }
-    return `<tr><td class="sc sc1" style="background:${bg};font-family:monospace;color:#1d4ed8;font-weight:600">${c.codigo}</td><td class="sc sc2" style="background:${bg};font-weight:500">${escapeHtml(c.nome)}</td><td class="sc sc3" style="background:${bg}">${escapeHtml(c.responsavel||'')}</td>${cells}</tr>`;
+    return `<tr><td class="sc sc1" style="background:${bg};font-family:monospace;color:#1d4ed8;font-weight:600">${escapeHtml(c.codigo||'')}</td><td class="sc sc2" style="background:${bg};font-weight:500">${escapeHtml(c.nome||'')}</td><td class="sc sc3" style="background:${bg}">${escapeHtml(c.responsavel||'')}</td>${cells}</tr>`;
   }).join('');
 }
 function anualEdit(td,key,cid,field,val,type){
