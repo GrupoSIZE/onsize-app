@@ -395,8 +395,31 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
 .men-periodo-destaque{display:inline-flex;align-items:center;gap:8px;margin-left:8px;padding:7px 14px;border-radius:8px;border:2px solid #c9c23d;background:#111;color:#f2ec73;font-size:13px;font-weight:800;letter-spacing:.04em;box-shadow:0 2px 8px rgba(0,0,0,.12);white-space:nowrap}
 .men-periodo-destaque .rotulo{font-size:10px;color:#d6d18a;text-transform:uppercase;letter-spacing:.12em}
 #fil-men-mes{font-weight:800;border:2px solid #c9c23d;background:#fffdf0;min-width:135px}
-#page-iva-men .tb{position:sticky;top:0;z-index:30;background:var(--bg);padding-top:8px;padding-bottom:8px;border-bottom:1px solid #ddd8b0}
-#page-iva-men thead th{position:sticky;top:61px;z-index:25}
+/* IVA Mensal: barra e cabeçalho fixos sem deixar linhas passar por trás */
+#page-iva-men .tb{
+  position:sticky;
+  top:0;
+  z-index:1000;
+  background:var(--bg);
+  padding-top:8px;
+  padding-bottom:10px;
+  border-bottom:1px solid #ddd8b0;
+  box-shadow:0 8px 12px rgba(248,247,243,.96);
+}
+#page-iva-men .tb::after{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-12px;
+  height:12px;
+  background:var(--bg);
+  pointer-events:none;
+}
+#page-iva-men .twrap{position:relative;z-index:1}
+#page-iva-men thead th{position:sticky!important;top:76px!important;z-index:900!important;background:var(--surf2)}
+#page-iva-men thead th.sc{z-index:950!important}
+#page-iva-men tbody td.sc{z-index:20}
 .cliente-truncado{max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* TESTE — gestão de serviços em massa */
@@ -1188,7 +1211,10 @@ function toInputDate(v) {
 
 function hojeISO(){ return new Date().toISOString().slice(0,10); }
 function isIvaCessadoCliente(c){
-  return c?.iva_cessado === true || c?.iva_cessado === 'true' || c?.iva_cessado === 'sim' || c?.iva_cessado === 'Sim' || c?.iva_cessado === '1' || c?.iva_cessado === 1;
+  const flag = c?.iva_cessado === true || c?.iva_cessado === 'true' || c?.iva_cessado === 'sim' || c?.iva_cessado === 'Sim' || c?.iva_cessado === '1' || c?.iva_cessado === 1;
+  // Regra operacional: se voltou a ter IVA Mensal ou Trimestral, deixa de ser IVA cessado.
+  if (c?.tem_iva_mensal || c?.tem_iva_trimestral) return false;
+  return flag;
 }
 function regimeIvaSelecionado(flags){
   if(flags?.tem_iva_mensal) return 'Mensal';
@@ -2022,7 +2048,7 @@ function svcChangedRows(){
     const patch={};
     SVCS.forEach(s=>{if(!!d[s.k]!==!!o[s.k])patch[s.k]=!!d[s.k];});
     const ivaMarcado=!!d.tem_iva_mensal || !!d.tem_iva_trimestral;
-    if(ivaMarcado && isIvaCessadoCliente(c)){
+    if(ivaMarcado){
       patch.iva_cessado=false;
       patch.iva_regime_anterior=null;
       patch.iva_data_cessacao=null;
@@ -2071,7 +2097,7 @@ function filteredClis() {
     if (r && c.responsavel !== r) return false;
     if (e) {
       if (e === 'Cessado') {
-        const ivaCessado = c.iva_cessado === true || c.iva_cessado === 'true' || c.iva_cessado === 'sim' || c.iva_cessado === 'Sim' || c.iva_cessado === '1' || c.iva_cessado === 1;
+        const ivaCessado = isIvaCessadoCliente(c);
         if (c.estado !== 'Cessado' && !ivaCessado) return false;
       } else if (c.estado !== e) {
         return false;
@@ -2097,7 +2123,7 @@ function renderClis() {
       <td style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600">${c.codigo}</td>
       <td style="font-weight:500">${c.nome}</td>
       <td>${c.responsavel||'<span style="color:#9ca3af">—</span>'}</td>
-      <td><span class="sdot ${dotCls}"></span>${c.estado}${(c.iva_cessado===true || c.iva_cessado==='true' || c.iva_cessado==='sim' || c.iva_cessado==='Sim' || c.iva_cessado==='1' || c.iva_cessado===1)?' <span class="badge ba" style="margin-left:6px">IVA cessado</span>':''}</td>
+      <td><span class="sdot ${dotCls}"></span>${c.estado}${isIvaCessadoCliente(c)?' <span class="badge ba" style="margin-left:6px">IVA cessado</span>':''}</td>
       <td>${flags||'<span style="color:#9ca3af;font-size:11px">—</span>'}</td>
       <td style="color:#6b7280;font-size:12px;max-width:180px">${c.obs||''}</td>
       <td>${canEdit?`<button class="btn-ic btn-sm" onclick="openCli('${c.id}')">✏️</button>`:''}</td>
@@ -2137,7 +2163,7 @@ function openCli(id=null) {
     document.getElementById('f-nom').value = c.nome;
     document.getElementById('f-res').value = c.responsavel||'';
     document.getElementById('f-est').value = c.estado;
-    document.getElementById('f-iva-cess').value = c.iva_cessado ? 'sim' : 'nao';
+    document.getElementById('f-iva-cess').value = isIvaCessadoCliente(c) ? 'sim' : 'nao';
     document.getElementById('f-iva-reg-ant').value = c.iva_regime_anterior||'';
     document.getElementById('f-iva-data').value = toInputDate(c.iva_data_cessacao||'');
     document.getElementById('f-iva-data-alt').value = toInputDate(c.iva_data_alteracao_regime||'');
@@ -2243,7 +2269,7 @@ async function delCli() {
 function renderIvaCessadas(){
   const q=(document.getElementById('src-iva-cess')?.value||'').toLowerCase();
   const resp=document.getElementById('fil-iva-cess-resp')?.value||'';
-  const data=clis.filter(c=>c.iva_cessado).filter(c=>{
+  const data=clis.filter(c=>isIvaCessadoCliente(c)).filter(c=>{
     if(q && !String(c.codigo||'').toLowerCase().includes(q) && !String(c.nome||'').toLowerCase().includes(q)) return false;
     if(resp && c.responsavel!==resp) return false;
     return true;
