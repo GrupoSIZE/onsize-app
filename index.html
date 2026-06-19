@@ -530,7 +530,7 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <select class="fil" id="fil-cli-resp"><option value="">Todos os responsáveis</option></select>
     <select class="fil" id="fil-cli-est">
       <option value="">Todos os estados</option>
-      <option value="Ativo">Ativo</option><option value="Cessado">Cessado</option>
+      <option value="Ativo">Ativo</option><option value="Cessado">Cessado / IVA cessado</option>
       <option value="Insolvente">Insolvente</option><option value="Suspenso">Suspenso</option>
     </select>
     <select class="fil" id="fil-cli-svc">
@@ -1967,7 +1967,14 @@ function filteredClis() {
   return clis.filter(c => {
     if (q && !c.codigo.toLowerCase().includes(q) && !c.nome.toLowerCase().includes(q)) return false;
     if (r && c.responsavel !== r) return false;
-    if (e && c.estado !== e) return false;
+    if (e) {
+      if (e === 'Cessado') {
+        const ivaCessado = c.iva_cessado === true || c.iva_cessado === 'true' || c.iva_cessado === 'sim' || c.iva_cessado === 'Sim' || c.iva_cessado === '1' || c.iva_cessado === 1;
+        if (c.estado !== 'Cessado' && !ivaCessado) return false;
+      } else if (c.estado !== e) {
+        return false;
+      }
+    }
     if (s && !c[s]) return false;
     return true;
   }).sort((a,b) => {
@@ -1988,7 +1995,7 @@ function renderClis() {
       <td style="font-family:monospace;font-size:12px;color:#1d4ed8;font-weight:600">${c.codigo}</td>
       <td style="font-weight:500">${c.nome}</td>
       <td>${c.responsavel||'<span style="color:#9ca3af">—</span>'}</td>
-      <td><span class="sdot ${dotCls}"></span>${c.estado}</td>
+      <td><span class="sdot ${dotCls}"></span>${c.estado}${(c.iva_cessado===true || c.iva_cessado==='true' || c.iva_cessado==='sim' || c.iva_cessado==='Sim' || c.iva_cessado==='1' || c.iva_cessado===1)?' <span class="badge ba" style="margin-left:6px">IVA cessado</span>':''}</td>
       <td>${flags||'<span style="color:#9ca3af;font-size:11px">—</span>'}</td>
       <td style="color:#6b7280;font-size:12px;max-width:180px">${c.obs||''}</td>
       <td>${canEdit?`<button class="btn-ic btn-sm" onclick="openCli('${c.id}')">✏️</button>`:''}</td>
