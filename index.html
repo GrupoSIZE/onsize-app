@@ -1354,6 +1354,62 @@ function tableToExcelDownload(table, filename, sheetName) {
   toast('Excel exportado');
 }
 
+
+function cleanTableForExcel(table){
+  const clone=table.cloneNode(true);
+  clone.querySelectorAll('input,textarea,select').forEach(el=>{
+    const td=document.createElement('span');
+    if(el.tagName==='SELECT'){
+      td.textContent=el.options[el.selectedIndex]?.text || el.value || '';
+    } else if(el.type==='checkbox'){
+      td.textContent=el.checked?'Sim':'Não';
+    } else {
+      td.textContent=el.value || '';
+    }
+    el.replaceWith(td);
+  });
+  clone.querySelectorAll('button,.btn,.ebtn,.bulk-btn').forEach(el=>el.remove());
+  return clone;
+}
+function activePageTitleForExport(){
+  const page=document.querySelector('.page.on');
+  const title=page?.querySelector('.tb-title')?.textContent?.trim() || document.querySelector('.ntab.on')?.textContent?.trim() || 'Exportacao';
+  return excelSafeName(title || 'Exportacao');
+}
+function exportCurrentPageExcel(){
+  try{
+    const page=document.querySelector('.page.on');
+    if(!page){toast('Nenhum menu ativo para exportar','err');return;}
+    const table=page.querySelector('table');
+    if(!table){toast('Este menu não tem tabela para exportar','err');return;}
+    const clone=cleanTableForExcel(table);
+    const title=activePageTitleForExport();
+    const hoje=new Date().toISOString().slice(0,10);
+    const nome=`${title}_${ANO}_${hoje}.xls`;
+    tableToExcelDownload(clone,nome,title);
+  }catch(e){toast('Erro ao exportar Excel: '+(e.message||e),'err');}
+}
+function addExcelButtonsToMenus(){
+  document.querySelectorAll('.page .tb').forEach(tb=>{
+    const page=tb.closest('.page');
+    if(!page || !page.querySelector('table'))return;
+    if(tb.querySelector('[data-auto-export-excel="1"]'))return;
+    // evita duplicar nos IVA que já tinham botão próprio
+    if(tb.querySelector('button[onclick*="exportarIvaExcel"]'))return;
+    const btn=document.createElement('button');
+    btn.className='ebtn';
+    btn.type='button';
+    btn.dataset.autoExportExcel='1';
+    btn.textContent='⬇ Excel';
+    btn.style.background='#ecfdf5';
+    btn.style.color='#166534';
+    btn.style.borderColor='#86efac';
+    btn.style.fontWeight='700';
+    btn.addEventListener('click',exportCurrentPageExcel);
+    tb.appendChild(btn);
+  });
+}
+
 function exportarIvaExcel(tipo) {
   const ano = typeof ANO !== 'undefined' ? ANO : new Date().getFullYear();
   const hoje = new Date().toISOString().slice(0,10);
@@ -1717,6 +1773,7 @@ async function initApp() {
   const em = document.getElementById('fil-men-mes'); if(em) em.value = m;
   const es = document.getElementById('fil-sal-mes'); if(es) es.value = m;
   const et = document.getElementById('fil-tri-trim'); if(et) et.value = t;
+  addExcelButtonsToMenus();
   await loadClis();
 }
 
