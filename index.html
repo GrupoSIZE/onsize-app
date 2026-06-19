@@ -377,7 +377,12 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
 .year-select{flex:1;min-width:0;padding:6px 7px;border:1px solid rgba(201,194,61,.35);border-radius:5px;background:#0b0b09;color:#e6e098;font-size:12px;outline:none}
 .year-open-btn{width:100%;margin-top:7px;padding:6px 8px;border:1px solid rgba(201,194,61,.35);border-radius:5px;background:rgba(201,194,61,.12);color:#fff8a6;font-size:11px;cursor:pointer}
 .year-open-btn:hover{background:rgba(201,194,61,.2)}
+.year-open-btn.danger{background:rgba(127,29,29,.22);border-color:#991b1b;color:#fecaca}
+.year-open-btn.danger:hover{background:rgba(127,29,29,.34)}
 .year-state{font-size:9px;color:#85815a;margin-top:5px}
+.year-state.warn{color:#fbbf24;font-weight:800}
+.year-note{font-size:10px;line-height:1.35;color:#cfc96b;margin-top:6px;padding:6px;border-radius:6px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.22)}
+.year-note.hide{display:none}
 
 @media(max-width:900px){
   nav#nav{width:196px !important}
@@ -512,13 +517,15 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
     <div class="year-row"><select id="global-year" class="year-select" onchange="changeWorkYear(this.value)"><option value="2026">2026</option></select></div>
     <button id="btn-open-year" class="year-open-btn hide" style="display:none" onclick="openNextFiscalYear()">＋ Abrir novo ano</button>
     <button id="btn-close-year" class="year-open-btn hide" style="display:none;background:#7f1d1d;border-color:#991b1b" onclick="toggleFiscalYearState()">Fechar ano</button>
+    <button id="btn-delete-year" class="year-open-btn danger hide" style="display:none" onclick="deleteFiscalYear()">Apagar ano aberto por erro</button>
     <div id="year-state" class="year-state">2026 — Aberto</div>
+    <div id="year-note" class="year-note hide"></div>
   </div>
   <div class="nright">
     <span class="nuser" id="nuser"></span>
     <span class="nbadge" id="nbadge"></span>
     <button class="nsair" onclick="logout()">Sair</button>
-    <span id="build-badge" class="build-badge">BUILD BETA + FÉRIAS + SERVIÇOS PERMISSÕES 2026-06-18</span>
+    <span id="build-badge" class="build-badge">PRODUÇÃO + ANOS FISCAIS 2026-06-19</span>
   </div>
 </nav>
 
@@ -981,6 +988,7 @@ nav#nav .nsair{grid-column:1/-1;width:100%;padding:7px 9px}
         <div class="fl"><label>Situação de IVA</label><select id="f-iva-cess"><option value="nao">Ativo em IVA</option><option value="sim">Cessado em IVA</option></select></div>
         <div class="fl"><label>Regime IVA anterior</label><select id="f-iva-reg-ant"><option value="">—</option><option value="Mensal">Mensal</option><option value="Trimestral">Trimestral</option><option value="Isento">Isento</option><option value="Outro">Outro</option></select></div>
         <div class="fl"><label>Data cessação IVA</label><input id="f-iva-data" type="date"></div>
+        <div class="fl"><label>Data alteração regime IVA</label><input id="f-iva-data-alt" type="date"></div>
         <div class="fl ff"><label>Motivo / observações da cessação de IVA</label><input id="f-iva-obs" placeholder="Motivo, enquadramento ou nota interna"></div>
         <div class="fl ff"><label>Observações gerais</label><input id="f-obs" placeholder="Notas gerais"></div>
         <div class="fsep">Serviços activos</div>
@@ -1176,6 +1184,16 @@ function toInputDate(v) {
   const p = String(v).replace(/-/g,'/').split('/');
   if (p.length === 3 && p[2].length === 4) return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
   return v;
+}
+
+function hojeISO(){ return new Date().toISOString().slice(0,10); }
+function isIvaCessadoCliente(c){
+  return c?.iva_cessado === true || c?.iva_cessado === 'true' || c?.iva_cessado === 'sim' || c?.iva_cessado === 'Sim' || c?.iva_cessado === '1' || c?.iva_cessado === 1;
+}
+function regimeIvaSelecionado(flags){
+  if(flags?.tem_iva_mensal) return 'Mensal';
+  if(flags?.tem_iva_trimestral) return 'Trimestral';
+  return '';
 }
 
 function fmtEur(v) {
@@ -1667,6 +1685,7 @@ function loginOk() {
   }
   const yearBtn=document.getElementById('btn-open-year'); if(yearBtn){ const admin=isAdminUser(); yearBtn.classList.toggle('hide',!admin); yearBtn.style.display=admin?'block':'none'; }
   const closeBtn=document.getElementById('btn-close-year'); if(closeBtn){ const admin=isAdminUser(); closeBtn.classList.toggle('hide',!admin); closeBtn.style.display=admin?'block':'none'; }
+  const delBtn=document.getElementById('btn-delete-year'); if(delBtn){ const admin=isAdminUser(); delBtn.classList.toggle('hide',!admin); delBtn.style.display=admin?'block':'none'; }
   initApp();
 }
 
@@ -1686,6 +1705,8 @@ function logout() {
   const svcTab=document.getElementById('tab-servicos-massa'); if(svcTab){ svcTab.classList.add('hide'); svcTab.style.display='none'; }
   const yearBtn=document.getElementById('btn-open-year'); if(yearBtn){ yearBtn.classList.add('hide'); yearBtn.style.display='none'; }
   const closeBtn=document.getElementById('btn-close-year'); if(closeBtn){ closeBtn.classList.add('hide'); closeBtn.style.display='none'; }
+  const delBtn=document.getElementById('btn-delete-year'); if(delBtn){ delBtn.classList.add('hide'); delBtn.style.display='none'; }
+  const yn=document.getElementById('year-note'); if(yn){ yn.classList.add('hide'); yn.textContent=''; }
 }
 
 
@@ -1704,18 +1725,47 @@ async function loadFiscalYears(){
   if(calSel) calSel.innerHTML=opts;
   const current=years.find(y=>Number(y.ano)===Number(ANO))||years[0];
   CURRENT_YEAR_STATE=String(current?.estado||'aberto').toLowerCase();
-  const ys=document.getElementById('year-state'); if(ys) ys.textContent=`${ANO} — ${CURRENT_YEAR_STATE==='fechado'?'Fechado':'Aberto'}`;
+  refreshYearUI();
+  updateYearLabels();
+}
+function refreshYearUI(){
+  const civil=new Date().getFullYear();
   const admin=isAdminUser();
+  const diff=Number(ANO)!==Number(civil);
+  const closed=CURRENT_YEAR_STATE==='fechado';
+  const ys=document.getElementById('year-state');
+  if(ys){
+    ys.textContent=`${ANO} — ${closed?'Fechado':'Aberto'}${diff?' | Ano civil '+civil:''}`;
+    ys.classList.toggle('warn',diff || closed);
+  }
+  const note=document.getElementById('year-note');
+  if(note){
+    if(diff){
+      note.textContent=`Atenção: está a lançar/consultar dados no ano ${ANO}. Ano civil atual: ${civil}.`;
+      note.classList.remove('hide');
+    } else if(closed){
+      note.textContent=`Ano ${ANO} fechado: apenas consulta. Para editar, o Administrador tem de reabrir.`;
+      note.classList.remove('hide');
+    } else {
+      note.textContent='';
+      note.classList.add('hide');
+    }
+  }
   const btn=document.getElementById('btn-open-year'); if(btn){ btn.classList.toggle('hide',!admin); btn.style.display=admin?'block':'none'; }
   const closeBtn=document.getElementById('btn-close-year');
   if(closeBtn){
     closeBtn.classList.toggle('hide',!admin);
     closeBtn.style.display=admin?'block':'none';
-    closeBtn.textContent=CURRENT_YEAR_STATE==='fechado'?'Reabrir ano':'Fechar ano';
-    closeBtn.style.background=CURRENT_YEAR_STATE==='fechado'?'#14532d':'#7f1d1d';
-    closeBtn.style.borderColor=CURRENT_YEAR_STATE==='fechado'?'#166534':'#991b1b';
+    closeBtn.textContent=closed?'Reabrir ano':'Fechar ano';
+    closeBtn.style.background=closed?'#14532d':'#7f1d1d';
+    closeBtn.style.borderColor=closed?'#166534':'#991b1b';
   }
-  updateYearLabels();
+  const delBtn=document.getElementById('btn-delete-year');
+  if(delBtn){
+    const canDelete=admin && FISCAL_YEARS.length>1 && Number(ANO)!==2026;
+    delBtn.classList.toggle('hide',!canDelete);
+    delBtn.style.display=canDelete?'block':'none';
+  }
 }
 function updateYearLabels(){
   const series=[...document.querySelectorAll('th')].find(th=>/^Séries\s+\d{4}$/i.test(th.textContent.trim()));
@@ -1731,7 +1781,7 @@ async function changeWorkYear(v){
   const row=FISCAL_YEARS.find(x=>Number(x.ano)===y);
   CURRENT_YEAR_STATE=String(row?.estado||'aberto').toLowerCase();
   const calSel=document.getElementById('fil-cal-ano'); if(calSel) calSel.value=String(y);
-  const ys=document.getElementById('year-state'); if(ys) ys.textContent=`${ANO} — ${CURRENT_YEAR_STATE==='fechado'?'Fechado':'Aberto'}`;
+  refreshYearUI();
   updateYearLabels();
   await reloadCurrentPage();
 }
@@ -1792,6 +1842,38 @@ async function toggleFiscalYearState(){
   await loadFiscalYears();
   await reloadCurrentPage();
 }
+async function yearHasOperationalData(y){
+  const tables=['iva_trimestral','iva_mensal','cope','saft','retencoes','modelo30','modelo10','relatorio_unico','faturacao_rendas','fecho','salarios','independentes','ferias_pedidos','ferias_saldos','ferias_periodos_criticos'];
+  const found=[];
+  for(const t of tables){
+    try{
+      const {count,error}=await sb.from(t).select('id',{count:'exact',head:true}).eq('ano',y);
+      if(error){ console.warn('Ignorado no teste de ano:',t,error.message); continue; }
+      if((count||0)>0) found.push(`${t} (${count})`);
+    }catch(e){ console.warn('Ignorado no teste de ano:',t,e?.message||e); }
+  }
+  return found;
+}
+async function deleteFiscalYear(){
+  if(!isAdminUser()){toast('Apenas o Administrador pode apagar um ano fiscal','err');return;}
+  if(Number(ANO)===2026){toast('O ano base 2026 não pode ser apagado','err');return;}
+  if(FISCAL_YEARS.length<=1){toast('Não podes apagar o único ano existente','err');return;}
+  const usage=await yearHasOperationalData(ANO);
+  if(usage.length){
+    toast('Ano com dados: não pode ser apagado','err');
+    alert(`O ano ${ANO} já tem registos e não pode ser apagado.\n\nTabelas com dados:\n- ${usage.slice(0,12).join('\n- ')}${usage.length>12?'\n- ...':''}\n\nFecha o ano se quiseres bloquear edição, mas não o apagues.`);
+    return;
+  }
+  if(!confirm(`Apagar o ano ${ANO}?\n\nEsta opção é só para anos abertos por erro e sem dados. A ação remove apenas o ano da lista de anos fiscais.`)) return;
+  const {error}=await sb.from('anos_fiscais').delete().eq('ano',ANO);
+  if(error){toast('Erro ao apagar ano: '+error.message,'err');return;}
+  toast(`Ano ${ANO} apagado`);
+  const remaining=FISCAL_YEARS.filter(y=>Number(y.ano)!==Number(ANO));
+  ANO=Math.max(...remaining.map(y=>Number(y.ano)||0),2026);
+  await loadFiscalYears();
+  const sel=document.getElementById('global-year'); if(sel) sel.value=String(ANO);
+  await changeWorkYear(ANO);
+}
 function assertYearOpen(){
   if(CURRENT_YEAR_STATE==='fechado') throw new Error(`O ano ${ANO} está fechado e só pode ser consultado.`);
 }
@@ -1841,7 +1923,9 @@ let svcDraft = new Map();
 let svcSelected = new Set();
 
 function svcClientFlags(c){
-  const o={}; SVCS.forEach(s=>o[s.k]=!!c[s.k]); return o;
+  const o={}; SVCS.forEach(s=>o[s.k]=!!c[s.k]);
+  if(isIvaCessadoCliente(c)){ o.tem_iva_mensal=false; o.tem_iva_trimestral=false; }
+  return o;
 }
 function svcFilteredClients(){
   const q=(document.getElementById('src-svc-massa')?.value||'').trim().toLowerCase();
@@ -1930,7 +2014,25 @@ function bulkSetService(val){
   });
   renderServiceMatrix();
 }
-function svcChangedRows(){const out=[];svcDraft.forEach((d,id)=>{const o=svcOriginal.get(id)||{};const patch={};SVCS.forEach(s=>{if(!!d[s.k]!==!!o[s.k])patch[s.k]=!!d[s.k];});if(Object.keys(patch).length)out.push({id,patch});});return out;}
+function svcChangedRows(){
+  const out=[];
+  svcDraft.forEach((d,id)=>{
+    const o=svcOriginal.get(id)||{};
+    const c=clis.find(x=>x.id===id)||{};
+    const patch={};
+    SVCS.forEach(s=>{if(!!d[s.k]!==!!o[s.k])patch[s.k]=!!d[s.k];});
+    const ivaMarcado=!!d.tem_iva_mensal || !!d.tem_iva_trimestral;
+    if(ivaMarcado && isIvaCessadoCliente(c)){
+      patch.iva_cessado=false;
+      patch.iva_regime_anterior=null;
+      patch.iva_data_cessacao=null;
+      patch.iva_cessacao_obs=null;
+      patch.iva_data_alteracao_regime=hojeISO();
+    }
+    if(Object.keys(patch).length)out.push({id,patch});
+  });
+  return out;
+}
 async function saveServiceMatrix(){
   const conflitos=[];
   svcDraft.forEach((d,id)=>{if(d.tem_iva_mensal&&d.tem_iva_trimestral){const c=clis.find(x=>x.id===id);conflitos.push(c?.nome||id);}});
@@ -2017,6 +2119,10 @@ document.querySelectorAll('#tbl-cli th[data-col]').forEach(th => {
   document.getElementById(id).addEventListener('input', renderClis);
   document.getElementById(id).addEventListener('change', renderClis);
 });
+['f-iva-cess','f-iva-data','f-iva-data-alt'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('change', syncIvaClienteModal);
+});
 
 function openCli(id=null) {
   if (id && !can('editarClientes')) { toast('Sem permissão para editar empresas','err'); return; }
@@ -2034,9 +2140,11 @@ function openCli(id=null) {
     document.getElementById('f-iva-cess').value = c.iva_cessado ? 'sim' : 'nao';
     document.getElementById('f-iva-reg-ant').value = c.iva_regime_anterior||'';
     document.getElementById('f-iva-data').value = toInputDate(c.iva_data_cessacao||'');
+    document.getElementById('f-iva-data-alt').value = toInputDate(c.iva_data_alteracao_regime||'');
     document.getElementById('f-iva-obs').value = c.iva_cessacao_obs||'';
     document.getElementById('f-obs').value = c.obs||'';
     SVCS.forEach(s => { const el=document.getElementById('si-'+s.k); if(el) el.classList.toggle('on',!!c[s.k]); });
+    syncIvaClienteModal();
   } else {
     document.getElementById('f-cod').value='';
     document.getElementById('f-cod').disabled=false;
@@ -2046,18 +2154,43 @@ function openCli(id=null) {
     document.getElementById('f-iva-cess').value='nao';
     document.getElementById('f-iva-reg-ant').value='';
     document.getElementById('f-iva-data').value='';
+    document.getElementById('f-iva-data-alt').value='';
     document.getElementById('f-iva-obs').value='';
     document.getElementById('f-obs').value='';
     SVCS.forEach(s => { const el=document.getElementById('si-'+s.k); if(el) el.classList.remove('on'); });
+    syncIvaClienteModal();
   }
   document.getElementById('mcli').classList.add('on');
 }
 function closeCli() { document.getElementById('mcli').classList.remove('on'); editCliId=null; }
+function syncIvaClienteModal(){
+  const cess=document.getElementById('f-iva-cess');
+  if(!cess) return;
+  const men=document.getElementById('si-tem_iva_mensal');
+  const tri=document.getElementById('si-tem_iva_trimestral');
+  if(cess.value==='sim'){
+    men?.classList.remove('on');
+    tri?.classList.remove('on');
+    if(!document.getElementById('f-iva-data').value) document.getElementById('f-iva-data').value=hojeISO();
+  } else if(men?.classList.contains('on') || tri?.classList.contains('on')) {
+    if(!document.getElementById('f-iva-data-alt').value) document.getElementById('f-iva-data-alt').value=hojeISO();
+    document.getElementById('f-iva-reg-ant').value='';
+    document.getElementById('f-iva-data').value='';
+    document.getElementById('f-iva-obs').value='';
+  }
+}
 function togSvc(k) {
   const el=document.getElementById('si-'+k);
   el.classList.toggle('on');
-  if(k==='tem_iva_mensal' && el.classList.contains('on')) document.getElementById('si-tem_iva_trimestral')?.classList.remove('on');
-  if(k==='tem_iva_trimestral' && el.classList.contains('on')) document.getElementById('si-tem_iva_mensal')?.classList.remove('on');
+  if(k==='tem_iva_mensal' && el.classList.contains('on')) {
+    document.getElementById('si-tem_iva_trimestral')?.classList.remove('on');
+    document.getElementById('f-iva-cess').value='nao';
+  }
+  if(k==='tem_iva_trimestral' && el.classList.contains('on')) {
+    document.getElementById('si-tem_iva_mensal')?.classList.remove('on');
+    document.getElementById('f-iva-cess').value='nao';
+  }
+  syncIvaClienteModal();
 }
 
 async function saveCli() {
@@ -2071,12 +2204,25 @@ async function saveCli() {
     iva_cessado: document.getElementById('f-iva-cess').value==='sim',
     iva_regime_anterior: document.getElementById('f-iva-reg-ant').value||null,
     iva_data_cessacao: document.getElementById('f-iva-data').value||null,
+    iva_data_alteracao_regime: document.getElementById('f-iva-data-alt').value||null,
     iva_cessacao_obs: document.getElementById('f-iva-obs').value.trim()||null,
     obs: document.getElementById('f-obs').value.trim()||null,
     tem_iuc: false,
   };
   SVCS.forEach(s => { pay[s.k] = document.getElementById('si-'+s.k).classList.contains('on'); });
   if(pay.tem_iva_mensal && pay.tem_iva_trimestral){toast('O cliente não pode ter IVA Mensal e IVA Trimestral ao mesmo tempo.','err');return;}
+  if(pay.iva_cessado){
+    pay.tem_iva_mensal=false;
+    pay.tem_iva_trimestral=false;
+    if(!pay.iva_data_cessacao) pay.iva_data_cessacao=hojeISO();
+  }
+  if(pay.tem_iva_mensal || pay.tem_iva_trimestral){
+    pay.iva_cessado=false;
+    pay.iva_regime_anterior=null;
+    pay.iva_data_cessacao=null;
+    pay.iva_cessacao_obs=null;
+    if(!pay.iva_data_alteracao_regime) pay.iva_data_alteracao_regime=hojeISO();
+  }
   let error;
   try{ if(editCliId) await auditedDirectUpdate('clientes',editCliId,pay,editCliId); else await auditedDirectInsert('clientes',pay,null); }catch(e){toast('Erro: '+e.message,'err');return;}
   toast(editCliId?'Cliente actualizado':'Cliente criado');
@@ -2158,7 +2304,7 @@ async function loadIvaTri() {
   const resp = document.getElementById('fil-tri-resp').value;
   const q = document.getElementById('src-tri').value.toLowerCase();
 
-  const {data:cl} = await sb.from('clientes').select('id,codigo,nome,responsavel').eq('tem_iva_trimestral',true).eq('iva_cessado',false).eq('estado','Ativo').order('codigo');
+  const {data:cl} = await sb.from('clientes').select('id,codigo,nome,responsavel').eq('tem_iva_trimestral',true).or('iva_cessado.eq.false,iva_cessado.is.null').eq('estado','Ativo').order('codigo');
   const {data:rg} = await sb.from('iva_trimestral').select('*').eq('ano',ANO).eq('trimestre',tri);
   const rm = {}; (rg||[]).forEach(r => { rm[r.cliente_id]=r; });
 
@@ -2428,7 +2574,7 @@ async function loadIvaMen() {
   const resp = document.getElementById('fil-men-resp').value;
   const q = document.getElementById('src-men').value.toLowerCase();
 
-  const {data:cl} = await sb.from('clientes').select('id,codigo,nome,responsavel').eq('tem_iva_mensal',true).eq('iva_cessado',false).eq('estado','Ativo').order('codigo');
+  const {data:cl} = await sb.from('clientes').select('id,codigo,nome,responsavel').eq('tem_iva_mensal',true).or('iva_cessado.eq.false,iva_cessado.is.null').eq('estado','Ativo').order('codigo');
   const {data:rg} = await sb.from('iva_mensal').select('*').eq('ano',ANO).eq('mes',mes);
   const rm = {}; (rg||[]).forEach(r => { rm[r.cliente_id]=r; });
 
@@ -2911,8 +3057,8 @@ async function loadResumo() {
   const cont=document.getElementById('resumo-body');
   cont.innerHTML='<div class="loading"><div class="spin"></div> A calcular...</div>';
   const [clisTri,clisMen,triAll,menAll,allClis]=await Promise.all([
-    sb.from('clientes').select('id').eq('tem_iva_trimestral',true).eq('iva_cessado',false).eq('estado','Ativo'),
-    sb.from('clientes').select('id').eq('tem_iva_mensal',true).eq('iva_cessado',false).eq('estado','Ativo'),
+    sb.from('clientes').select('id').eq('tem_iva_trimestral',true).or('iva_cessado.eq.false,iva_cessado.is.null').eq('estado','Ativo'),
+    sb.from('clientes').select('id').eq('tem_iva_mensal',true).or('iva_cessado.eq.false,iva_cessado.is.null').eq('estado','Ativo'),
     sb.from('iva_trimestral').select('trimestre,saldo_iva,saldo_estado,envio,resp_execucao,cliente_id,lancamento_m1,lancamento_m2,lancamento_m3,bancos_m1,bancos_m2,bancos_m3').eq('ano',ANO),
     sb.from('iva_mensal').select('mes,saldo_iva,saldo_estado,envio,resp_execucao,cliente_id,lancamento,bancos_acc,arquivo').eq('ano',ANO),
     sb.from('clientes').select('id,codigo,nome,responsavel,tem_iva_trimestral,tem_iva_mensal').eq('estado','Ativo'),
