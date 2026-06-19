@@ -1635,6 +1635,11 @@ async function reloadCurrentPage(){
   if(p==='saft')return loadSaft();
   if(p==='retencoes')return loadRetencoes();
   if(p==='modelo30')return loadModelo30();
+  if(p==='modelo10')return loadAnualModule('modelo10');
+  if(p==='relatorio-unico')return loadAnualModule('relatorio_unico');
+  if(p==='faturacao-rendas')return loadAnualModule('faturacao_rendas');
+  if(p==='fecho')return loadAnualModule('fecho');
+  if(p==='ferias')return loadFerias();
   if(p==='salarios')return loadSalarios();
   if(p==='independentes')return loadInd();
   if(p==='calendario')return loadCalendario();
@@ -2617,6 +2622,13 @@ async function loadAnualModule(key){
   const cfg=ANUAL_MODULES[key]; if(!cfg)return;
   const tb=document.getElementById(cfg.tbody); const th=document.getElementById(cfg.thead);
   if(tb)tb.innerHTML='<tr><td colspan="99"><div class="loading"><div class="spin"></div> A carregar...</div></td></tr>';
+  const loadToken=Date.now()+Math.random();
+  if(tb) tb.dataset.loadToken=String(loadToken);
+  setTimeout(()=>{
+    if(tb && tb.dataset.loadToken===String(loadToken) && /A carregar/.test(tb.textContent||'')){
+      tb.innerHTML='<tr><td colspan="99"><div class="empty"><div class="empty-t">Não foi possível concluir o carregamento.</div><div>Confirma o SQL/RLS deste módulo e recarrega a página.</div></div></td></tr>';
+    }
+  },12000);
   if(th)th.innerHTML='<tr><th class="sc sc1">Cód.</th><th class="sc sc2">Cliente</th><th class="sc sc3">Responsável</th>'+cfg.fields.map(([f,l])=>`<th>${l}</th>`).join('')+'</tr>';
 
   let cl=[], rg=[], e1=null, e2=null;
@@ -2630,7 +2642,7 @@ async function loadAnualModule(key){
   }catch(err){ e2=err; }
 
   if(e1){
-    if(tb)tb.innerHTML=`<tr><td colspan="99"><div class="empty"><div class="empty-t">Erro ao carregar clientes</div><div>${escapeHtml(e1.message||String(e1))}</div></div></td></tr>`;
+    if(tb)tb.innerHTML=`<tr><td colspan="99"><div class="empty"><div class="empty-t">Erro ao carregar clientes</div><div>${escHtml(e1.message||String(e1))}</div></div></td></tr>`;
     toast('Erro clientes: '+(e1.message||String(e1)),'err');
     return;
   }
@@ -2651,12 +2663,12 @@ async function loadAnualModule(key){
   const filtered=fe?clientes.filter(c=>(map[c.id]?.estado||'A lançar')===fe):clientes;
   const cntEl=document.getElementById(cfg.cnt); if(cntEl)cntEl.textContent=filtered.length;
   const edit=can('editar');
-  if(!filtered.length){tb.innerHTML=`<tr><td colspan="${cfg.fields.length+3}"><div class="empty"><div class="empty-t">${cfg.empty}</div>${e2?`<div style="margin-top:8px;color:#b91c1c">Erro tabela: ${escapeHtml(e2.message||String(e2))}</div>`:''}</div></td></tr>`;return;}
+  if(!filtered.length){tb.innerHTML=`<tr><td colspan="${cfg.fields.length+3}"><div class="empty"><div class="empty-t">${cfg.empty}</div>${e2?`<div style="margin-top:8px;color:#b91c1c">Erro tabela: ${escHtml(e2.message||String(e2))}</div>`:''}</div></td></tr>`;return;}
   tb.innerHTML=filtered.map((c,ri)=>{const r=map[c.id]||{};const bg=rowBg(ri);let cells='';
     for(const [field,label,type] of cfg.fields){const v=r[field]??'';const shown=displayAnualValue(v,type);const safe=String(v).replace(/'/g,'&#39;');
-      cells += edit?`<td style="text-align:center;cursor:pointer" onclick="anualEdit(this,'${key}','${c.id}','${field}','${safe}','${type}')">${escapeHtml(shown)}</td>`:`<td style="text-align:center">${escapeHtml(shown)}</td>`;
+      cells += edit?`<td style="text-align:center;cursor:pointer" onclick="anualEdit(this,'${key}','${c.id}','${field}','${safe}','${type}')">${escHtml(shown)}</td>`:`<td style="text-align:center">${escHtml(shown)}</td>`;
     }
-    return `<tr><td class="sc sc1" style="background:${bg};font-family:monospace;color:#1d4ed8;font-weight:600">${escapeHtml(c.codigo||'')}</td><td class="sc sc2" style="background:${bg};font-weight:500">${escapeHtml(c.nome||'')}</td><td class="sc sc3" style="background:${bg}">${escapeHtml(c.responsavel||'')}</td>${cells}</tr>`;
+    return `<tr><td class="sc sc1" style="background:${bg};font-family:monospace;color:#1d4ed8;font-weight:600">${escHtml(c.codigo||'')}</td><td class="sc sc2" style="background:${bg};font-weight:500">${escHtml(c.nome||'')}</td><td class="sc sc3" style="background:${bg}">${escHtml(c.responsavel||'')}</td>${cells}</tr>`;
   }).join('');
 }
 function anualEdit(td,key,cid,field,val,type){
@@ -3200,6 +3212,11 @@ async function delResp(){
 // ══════════════════════════════════════════════════════════
 function isAdminUser(){ return String(user?.nivel||'').trim().toLowerCase()==='administrador'; }
 function escHtml(v){ return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+// Alias de segurança para versões antigas do código que ainda chamem escapeHtml
+if (typeof window !== 'undefined' && typeof window.escapeHtml === 'undefined') {
+  window.escapeHtml = function(v){ return escHtml(v); };
+}
+
 let calDataCache=[];
 let calView='month';
 let calCursor=new Date();
