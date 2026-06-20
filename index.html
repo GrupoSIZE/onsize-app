@@ -1214,10 +1214,21 @@ function roleLabel(v){
   const n=normalizarNivel(v);
   return {administrador:'Administrador',tecnico:'Gestão',operacional:'Contabilidade'}[n] || v || '';
 }
+function uniqueResps(list=resps){
+  const seen = new Set();
+  return (list||[]).filter(r => {
+    const nome = String(r?.nome || '').trim();
+    if(!nome) return false;
+    const key = nome.toLowerCase();
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 function nivelAtual(){ return normalizarNivel(user?.nivel); }
 function podeEscolherQualquerResponsavel(){ return ['administrador','tecnico'].includes(nivelAtual()); }
 function opcoesResponsavelExecucao(){
-  if (podeEscolherQualquerResponsavel()) return [{v:'',l:'—'},...resps.filter(r=>r.estado==='Ativo').map(r=>({v:r.nome,l:r.nome}))];
+  if (podeEscolherQualquerResponsavel()) return [{v:'',l:'—'},...uniqueResps(resps).filter(r=>r.estado==='Ativo').map(r=>({v:r.nome,l:r.nome}))];
   const nome=String(user?.nome||'').trim();
   return [{v:nome,l:nome}];
 }
@@ -1945,7 +1956,7 @@ async function initApp() {
   await loadFiscalYears();
   if(can('verAuditoria')){
     const au=document.getElementById('fil-audit-user');
-    if(au)au.innerHTML='<option value="">Todos os utilizadores</option>'+resps.map(r=>`<option value="${r.nome}">${r.nome}</option>`).join('');
+    if(au)au.innerHTML='<option value="">Todos os utilizadores</option>'+uniqueResps(resps).map(r=>`<option value="${r.nome}">${r.nome}</option>`).join('');
     const am=document.getElementById('fil-audit-mod');
     if(am)am.innerHTML='<option value="">Todos os módulos</option>'+Object.entries(AUDIT_MODULES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
   }
@@ -1957,13 +1968,22 @@ async function initApp() {
       <div class="si-chk"><span class="si-ico">✓</span></div>
       <span class="si-lbl">${s.l}</span></label>`;
   });
-  // Dropdowns responsáveis
-  const fRes = document.getElementById('f-res');
-  ['fil-cli-resp','fil-iva-cess-resp','fil-tri-resp','fil-men-resp','fil-cope-resp','fil-saft-resp','fil-ret-resp','fil-m30-resp','fil-m10-resp','fil-ru-resp','fil-fat-resp','fil-fecho-resp','fil-sal-resp','fil-ind-resp'].forEach(id => {
+  // Dropdowns responsáveis — reconstruídos de raiz para evitar duplicados quando a app recarrega o ano/módulos
+  const respOptions = uniqueResps(resps).filter(r => r.estado === 'Ativo');
+  const respFilterIds = ['fil-cli-resp','fil-iva-cess-resp','fil-tri-resp','fil-men-resp','fil-cope-resp','fil-saft-resp','fil-ret-resp','fil-m30-resp','fil-m10-resp','fil-ru-resp','fil-fat-resp','fil-fecho-resp','fil-sal-resp','fil-ind-resp'];
+  respFilterIds.forEach(id => {
     const el = document.getElementById(id);
-    resps.forEach(r => { el.innerHTML += `<option value="${r.nome}">${r.nome}</option>`; });
+    if(!el) return;
+    const current = el.value || '';
+    el.innerHTML = '<option value="">Todos os responsáveis</option>' + respOptions.map(r => `<option value="${r.nome}">${r.nome}</option>`).join('');
+    if([...el.options].some(o => o.value === current)) el.value = current;
   });
-  resps.forEach(r => { fRes.innerHTML += `<option value="${r.nome}">${r.nome}</option>`; });
+  const fRes = document.getElementById('f-res');
+  if(fRes){
+    const current = fRes.value || '';
+    fRes.innerHTML = '<option value="">— Sem responsável —</option>' + respOptions.map(r => `<option value="${r.nome}">${r.nome}</option>`).join('');
+    if([...fRes.options].some(o => o.value === current)) fRes.value = current;
+  }
   // Mês/trim actual
   const m = new Date().getMonth()+1;
   const t = Math.ceil(m/3);
