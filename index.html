@@ -2100,15 +2100,28 @@ function svcChangedRows(){
     const o=svcOriginal.get(id)||{};
     const c=clis.find(x=>x.id===id)||{};
     const patch={};
-    SVCS.forEach(s=>{if(!!d[s.k]!==!!o[s.k])patch[s.k]=!!d[s.k];});
-    const ivaMarcado=!!d.tem_iva_mensal || !!d.tem_iva_trimestral;
-    if(ivaMarcado){
+    let mudouServico=false;
+    SVCS.forEach(s=>{
+      if(!!d[s.k]!==!!o[s.k]){
+        patch[s.k]=!!d[s.k];
+        mudouServico=true;
+      }
+    });
+
+    // Só limpa o estado "IVA cessado" se o próprio utilizador alterou
+    // o regime IVA desta linha para IVA Mensal ou IVA Trimestral.
+    // Antes estava a aplicar esta limpeza a todos os clientes que já tinham IVA,
+    // por isso o aviso de gravação contava dezenas/centenas de clientes.
+    const mudouParaIvaMensal = !!patch.tem_iva_mensal && !!d.tem_iva_mensal;
+    const mudouParaIvaTrimestral = !!patch.tem_iva_trimestral && !!d.tem_iva_trimestral;
+    if(mudouServico && (mudouParaIvaMensal || mudouParaIvaTrimestral)){
       patch.iva_cessado=false;
       patch.iva_regime_anterior=null;
       patch.iva_data_cessacao=null;
       patch.iva_cessacao_obs=null;
       patch.iva_data_alteracao_regime=hojeISO();
     }
+
     if(Object.keys(patch).length)out.push({id,patch});
   });
   return out;
